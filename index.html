@@ -138,7 +138,33 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
 @media (max-width: 620px){.top-actions .secondary{display:none}.project-name{width:180px;font-size:14px}.metric-grid,.result-grid,.scenario-template-grid{grid-template-columns:1fr}.dashboard-grid{display:block}.dashboard-grid>*{margin-bottom:16px}.hero-panel h1{font-size:35px}.form-grid.two,.form-grid.three,.form-grid.four,.product-selector,.property-card{grid-template-columns:1fr}.step-tab{font-size:0}.step-tab span{font-size:12px;margin:0}.form-step{padding:20px}.results-heading,.page-heading{display:block}.results-heading>div:last-child,.page-heading>div:last-child{margin-top:14px}.result-kpis{grid-template-columns:1fr}.big-result strong{font-size:38px}.load-preview{flex-direction:column}.search-box{min-width:0;width:100%}.table-toolbar{gap:10px}.table-toolbar>span{display:none}.report-body,.report-cover{padding:28px}.report-grid{grid-template-columns:1fr}}
 
 @media print{
-  body{background:white}.sidebar,.topbar,.no-print,.page:not(#report),.toast{display:none!important}.app-shell{display:block}.page-wrap{padding:0;max-width:none}#report{display:block!important}.report-sheet{box-shadow:none;width:100%;min-height:0}.report-cover{print-color-adjust:exact;-webkit-print-color-adjust:exact}.report-body{padding:30px 40px}@page{size:A4;margin:0}.report-section{page-break-inside:avoid}
+  @page{size:A4 portrait;margin:10mm}
+  *{box-shadow:none!important;text-shadow:none!important}
+  html,body{width:210mm;background:white!important}
+  body{margin:0;color:#1b2b3b!important}
+  .sidebar,.topbar,.no-print,.page:not(#report),.toast{display:none!important}
+  .app-shell,.main-content,.page-wrap,#report{display:block!important;width:100%!important;margin:0!important;padding:0!important;max-width:none!important}
+  .report-sheet{box-shadow:none!important;width:190mm!important;min-height:0!important;margin:0 auto!important;background:white!important}
+  .report-cover{min-height:58mm!important;height:58mm!important;padding:12mm 13mm!important;background:#0a5f8c!important;color:white!important;display:grid!important;grid-template-columns:1fr auto!important;align-content:space-between!important;gap:8mm!important;print-color-adjust:exact;-webkit-print-color-adjust:exact;break-inside:avoid;page-break-inside:avoid}
+  .report-brand{font-size:13px!important}
+  .report-cover h1{font-size:25px!important;line-height:1.12!important;margin:5mm 0 2mm!important;max-width:112mm!important;letter-spacing:0!important}
+  .report-cover p{font-size:10px!important;margin:0!important;color:#d7eef8!important}
+  .report-cover>div:nth-child(2) span,.report-capacity span{font-size:7px!important;letter-spacing:.8px!important}
+  .report-capacity strong{font-size:21px!important;margin:2mm 0!important}
+  .report-capacity small{font-size:8px!important;color:#d7eef8!important}
+  .report-body{padding:8mm 0 0!important}
+  .report-section{margin:0 0 5mm!important;break-inside:avoid;page-break-inside:avoid}
+  .report-section:nth-of-type(4){break-before:page;page-break-before:always}
+  .report-section h2{font-size:12px!important;line-height:1.2!important;padding-bottom:2mm!important;margin:0 0 3mm!important;border-bottom:1.5pt solid #0a83c1!important}
+  .report-grid{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:2mm!important}
+  .report-field{padding:2.4mm!important;border-radius:2mm!important;background:#f4f7fa!important;break-inside:avoid;page-break-inside:avoid}
+  .report-field span{font-size:6.5px!important;letter-spacing:.3px!important}
+  .report-field strong{font-size:9px!important;margin-top:1mm!important;line-height:1.25!important}
+  .report-note{padding:2.5mm 3mm!important;margin-top:3mm!important;font-size:8px!important;line-height:1.35!important;background:#eef8fd!important;border-left:2pt solid #0a83c1!important;break-inside:avoid;page-break-inside:avoid}
+  .report-table{width:100%!important;min-width:0!important;break-inside:avoid;page-break-inside:avoid}
+  .report-table th,.report-table td{padding:2mm 2.4mm!important;font-size:8px!important;line-height:1.25!important}
+  .report-table th{background:#f1f6f9!important}
+  .report-footer{padding:4mm 0 0!important;border-top:1px solid #dde5ec!important;font-size:7px!important;color:#71808e!important;break-inside:avoid;page-break-inside:avoid}
 }
 
   </style>
