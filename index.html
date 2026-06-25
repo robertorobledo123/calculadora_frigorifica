@@ -528,6 +528,33 @@ let toastTimer;
 
 const CATEGORY_COLORS = ['#0783c5','#36a5d8','#38a879','#e39a28','#7259c6','#d85d73','#5a7d93'];
 const LOAD_COLORS = ['#0783c5','#35a7d7','#37a57b','#e4a027','#7a63c7','#d65e72'];
+const APPLICATION_FACTORS = {
+  'Conservación media temperatura': { capacity:1.00 },
+  'Conservación de congelados': { capacity:1.03 },
+  'Preenfriamiento': { capacity:1.08 },
+  'Blast freezer': { capacity:1.18 },
+  'Proceso alimentario': { capacity:1.07 },
+  'Farmacéutica': { capacity:1.05 },
+  'Cuarto climatizado': { capacity:0.95 }
+};
+const REFRIGERANT_FACTORS = {
+  'R404A': { capacity:1.00, cop:0.94 },
+  'R448A': { capacity:1.01, cop:1.03 },
+  'R449A': { capacity:1.01, cop:1.02 },
+  'R134a': { capacity:0.96, cop:1.04 },
+  'R290': { capacity:1.03, cop:1.06 },
+  'R744 (CO₂)': { capacity:0.98, cop:0.95 },
+  'R717 (NH₃)': { capacity:1.06, cop:1.10 },
+  'Glicol': { capacity:0.90, cop:0.88 }
+};
+const SYSTEM_FACTORS = {
+  'Expansión directa': { capacity:1.00, cop:1.00 },
+  'Rack de compresores': { capacity:0.98, cop:1.05 },
+  'Sistema secundario': { capacity:1.06, cop:0.92 },
+  'Recirculación bombeada': { capacity:0.97, cop:1.03 },
+  'CO₂ transcrítico': { capacity:1.08, cop:0.90 },
+  'Dos etapas': { capacity:0.96, cop:1.08 }
+};
 
 function num(id) {
   const value = parseFloat($(id).value);
@@ -535,6 +562,19 @@ function num(id) {
 }
 
 function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+function getFactor(map, key, fallback = { capacity:1, cop:1 }) { return map[key] || fallback; }
+
+function selectionFactors(data) {
+  const application = getFactor(APPLICATION_FACTORS, data.applicationType, { capacity:1 });
+  const refrigerant = getFactor(REFRIGERANT_FACTORS, data.refrigerant);
+  const system = getFactor(SYSTEM_FACTORS, data.systemType);
+  const lift = Math.max(1, data.condTemp - data.evapTemp);
+  const referenceLift = 70;
+  const liftCapacity = clamp(1 + (lift - referenceLift) * 0.006, 0.85, 1.28);
+  const capacity = application.capacity * liftCapacity * system.capacity / Math.max(refrigerant.capacity, 0.1);
+  const cop = refrigerant.cop * system.cop;
+  return { application, refrigerant, system, lift, liftCapacity, capacity, cop };
+}
 
 function showToast(message) {
   const el = $('#toast');
@@ -709,15 +749,22 @@ function calculateFromData(data) {
   const productWindow = clamp(data.productHours || runtime, 0.1, 24);
   const processCapacity = product / productWindow + (totalEnergy - product) / runtime;
   const capacityBeforeMargin = Math.max(energyCapacity, processCapacity);
-  const requiredCapacity = capacityBeforeMargin * (1 + data.safetyMargin / 100);
   const averageLoad = totalEnergy / 24;
+
+  const factors = selectionFactors({
+    applicationType: data.applicationType,
+    refrigerant: data.refrigerant,
+    systemType: data.systemType,
+    condTemp: data.condTemp,
+    evapTemp: data.evapTemp
+  });
+  const requiredCapacity = capacityBeforeMargin * factors.capacity * (1 + data.safetyMargin / 100);
   const btu = requiredCapacity * 3412.142;
   const tr = requiredCapacity / 3.5168525;
-
   const te = data.evapTemp + 273.15;
   const tc = data.condTemp + 273.15;
   const carnotCop = tc > te ? te / (tc - te) : 0;
-  const estimatedCop = clamp(carnotCop * data.carnotEfficiency / 100, 0.5, 8);
+  const estimatedCop = clamp(carnotCop * data.carnotEfficiency / 100 * factors.cop, 0.5, 8);
   const compressorInput = requiredCapacity / estimatedCop;
   const monthlyConsumption = compressorInput * runtime * 30;
   const monthlyCost = monthlyConsumption * data.electricRate;
@@ -727,7 +774,7 @@ function calculateFromData(data) {
 
   return {
     timestamp: new Date().toISOString(), data, loads, totalEnergy, requiredCapacity, capacityBeforeMargin, energyCapacity, processCapacity,
-    averageLoad, btu, tr, estimatedCop, compressorInput, monthlyConsumption, monthlyCost, dominant,
+    averageLoad, btu, tr, estimatedCop, compressorInput, monthlyConsumption, monthlyCost, dominant, factors,
     geometry:{ floorArea, wallArea, roofArea, volume: floorArea * data.height, totalArea: floorArea + roofArea + wallArea },
     air:{ infiltratedVolume, enthalpyDifference, massDryAir }
   };
@@ -737,6 +784,7 @@ function validateData(data) {
   const errors = [];
   if (data.length <= 0 || data.width <= 0 || data.height <= 0) errors.push('Las dimensiones deben ser mayores a cero.');
   if (data.runtimeHours <= 0) errors.push('Las horas de refrigeración deben ser mayores a cero.');
+  if (data.evapTemp >= data.insideTemp) errors.push('La temperatura de evaporación debe ser menor que la temperatura interior.');
   if (data.condTemp <= data.evapTemp) errors.push('La temperatura de condensación debe ser mayor que la de evaporación.');
   if (data.productMass < 0) errors.push('La masa de producto no puede ser negativa.');
   return errors;
@@ -755,7 +803,7 @@ function runCalculation(options = {}) {
     renderReport();
     $('#resultsSection').classList.remove('hidden');
     $('#liveCapacity').textContent = `${nf.format(result.requiredCapacity)} kW`;
-    $('#liveCapacity').nextElementSibling.textContent = `${nf.format(result.tr)} TR · con ${data.safetyMargin}% de margen`;
+    $('#liveCapacity').nextElementSibling.textContent = `${nf.format(result.tr)} TR · margen ${data.safetyMargin}% · factor ×${nf.format(result.factors.capacity)}`;
     $('#resultsSection').scrollIntoView({ behavior:'smooth', block:'start' });
     showToast('Cálculo completado correctamente.');
   }
@@ -783,6 +831,7 @@ function renderResults(result) {
 
 function buildWarnings(result) {
   const { data, loads, estimatedCop, requiredCapacity } = result;
+  const factors = result.factors || selectionFactors(data);
   const infiltration = loads.find(x => x.key === 'infiltration');
   const product = loads.find(x => x.key === 'product');
   const transmission = loads.find(x => x.key === 'transmission');
@@ -792,6 +841,7 @@ function buildWarnings(result) {
   if (product.percent > 50) list.push({ title:'Carga de producto dominante', text:'La capacidad depende fuertemente de la rotación y del tiempo objetivo. Confirma masa y temperatura de entrada.' });
   if (transmission.percent > 35) list.push({ title:'Oportunidad de aislamiento', text:'La envolvente tiene un peso importante. Compara un panel con menor valor U.' });
   if (data.runtimeHours < 16) list.push({ title:'Pocas horas disponibles', text:'La capacidad de selección aumenta porque la energía diaria debe retirarse en menos horas.' });
+  if (Math.abs(factors.capacity - 1) > 0.05) list.push({ title:'Factor de selección aplicado', text:`Aplicación, refrigerante, sistema y lift térmico ajustan la capacidad en ×${nf.format(factors.capacity)}.` });
   if (estimatedCop < 1.5) list.push({ title:'COP estimado bajo', text:'Revisa el diferencial entre evaporación y condensación; puede indicar alto consumo y descarga severa.' });
   else list.push({ good:true, title:'COP preliminar razonable', text:`El valor estimado es ${nf.format(estimatedCop)}. Debe validarse con software del fabricante.` });
   if (requiredCapacity > 0) list.push({ good:true, title:'Margen aplicado de forma explícita', text:`Se añadió ${data.safetyMargin}% después de convertir la energía diaria a capacidad durante ${data.runtimeHours} h/día.` });
@@ -941,13 +991,14 @@ function renderReport() {
     return;
   }
   const r = lastResult, d = r.data;
+  const factors = r.factors || selectionFactors(d);
   $('#reportCapacity').textContent = `${nf.format(r.requiredCapacity)} kW`;
   $('#reportCapacityAlt').textContent = `${nf.format(r.btu)} BTU/h · ${nf.format(r.tr)} TR`;
   $('#reportBody').innerHTML = `
     <section class="report-section"><h2>1. Resumen ejecutivo</h2><div class="report-grid">
       ${reportField('Aplicación',d.applicationType)}${reportField('Capacidad de selección',nf.format(r.requiredCapacity)+' kW')}${reportField('Energía diaria',nf.format(r.totalEnergy)+' kWh/día')}
       ${reportField('Carga promedio',nf.format(r.averageLoad)+' kW')}${reportField('COP preliminar',nf.format(r.estimatedCop))}${reportField('Consumo mensual',nf.format(r.monthlyConsumption)+' kWh')}
-    </div><div class="report-note">La capacidad considera tanto la energía frigorífica diaria durante ${d.runtimeHours} horas disponibles como el tiempo objetivo de ${d.productHours} horas para el producto. Después se aplicó un margen de ${d.safetyMargin}%. La selección final deberá verificarse con datos certificados del fabricante.</div></section>
+    </div><div class="report-note">La capacidad considera tanto la energía frigorífica diaria durante ${d.runtimeHours} horas disponibles como el tiempo objetivo de ${d.productHours} horas para el producto. Después se aplicó un margen de ${d.safetyMargin}% y un factor de selección ×${nf.format(factors.capacity)} por aplicación, refrigerante, configuración y lift térmico. La selección final deberá verificarse con datos certificados del fabricante.</div></section>
     <section class="report-section"><h2>2. Condiciones de diseño</h2><div class="report-grid">
       ${reportField('Dimensiones',`${d.length} × ${d.width} × ${d.height} m`)}${reportField('Volumen',nf.format(r.geometry.volume)+' m³')}${reportField('Área envolvente',nf.format(r.geometry.totalArea)+' m²')}
       ${reportField('Temperatura interior',d.insideTemp+' °C')}${reportField('Temperatura exterior',d.outsideTemp+' °C')}${reportField('Humedad exterior',d.outsideRH+' %')}
@@ -958,7 +1009,7 @@ function renderReport() {
       ${reportField('Punto de congelación',d.freezingPoint+' °C')}${reportField('Tiempo objetivo',d.productHours+' h')}${reportField('Empaque',d.packagingPct+' %')}
     </div></section>
     <section class="report-section"><h2>4. Desglose de cargas</h2><table class="report-table"><thead><tr><th>Partida</th><th>Energía diaria</th><th>Participación</th><th>Capacidad equivalente*</th></tr></thead><tbody>${r.loads.map(l=>`<tr><td>${l.label}</td><td>${nf.format(l.energy)} kWh/día</td><td>${nf.format(l.percent)}%</td><td>${nf.format(l.energy/d.runtimeHours)} kW</td></tr>`).join('')}<tr><td><strong>Total</strong></td><td><strong>${nf.format(r.totalEnergy)} kWh/día</strong></td><td>100%</td><td><strong>${nf.format(r.capacityBeforeMargin)} kW</strong></td></tr></tbody></table><div class="report-note">*Capacidad equivalente calculada con ${d.runtimeHours} horas de operación. La simultaneidad y los ciclos reales deben revisarse durante el diseño detallado.</div></section>
-    <section class="report-section"><h2>5. Sistema preliminar</h2><div class="report-grid">${reportField('Refrigerante',d.refrigerant)}${reportField('Configuración',d.systemType)}${reportField('Evaporación',d.evapTemp+' °C')}${reportField('Condensación',d.condTemp+' °C')}${reportField('Potencia eléctrica estimada',nf.format(r.compressorInput)+' kW')}${reportField('Costo mensual',money.format(r.monthlyCost))}</div></section>
+    <section class="report-section"><h2>5. Sistema preliminar</h2><div class="report-grid">${reportField('Refrigerante',d.refrigerant)}${reportField('Configuración',d.systemType)}${reportField('Evaporación',d.evapTemp+' °C')}${reportField('Condensación',d.condTemp+' °C')}${reportField('Lift térmico',nf.format(factors.lift)+' K')}${reportField('Factor selección','×'+nf.format(factors.capacity))}${reportField('Potencia eléctrica estimada',nf.format(r.compressorInput)+' kW')}${reportField('Costo mensual',money.format(r.monthlyCost))}</div></section>
     <section class="report-section"><h2>6. Observaciones</h2>${buildWarnings(r).map(w=>`<div class="report-note"><strong>${w.title}:</strong> ${w.text}</div>`).join('')}</section>`;
 }
 
