@@ -313,6 +313,7 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
                     <label>HR interior <span>%</span><input id="insideRH" type="number" min="1" max="100" value="85" /></label>
                     <label>HR exterior <span>%</span><input id="outsideRH" type="number" min="1" max="100" value="55" /></label>
                     <label>Corrección solar <span>K</span><input id="solarCorrection" type="number" min="0" step="0.5" value="3" /></label>
+                    <label>Temperatura suelo <span>°C</span><input id="soilTemp" type="number" step="0.5" value="18" /></label>
                   </div>
 
                   <div class="subsection">
@@ -335,9 +336,12 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
                     <div class="form-grid four">
                       <label>Ancho puerta <span>m</span><input id="doorWidth" type="number" min="0" step="0.1" value="1.2" /></label>
                       <label>Alto puerta <span>m</span><input id="doorHeight" type="number" min="0" step="0.1" value="2.2" /></label>
+                      <label>U puerta <span>W/m²K</span><input id="doorU" type="number" min="0" step="0.1" value="1.8" /></label>
                       <label>Aperturas <span>/día</span><input id="doorOpenings" type="number" min="0" step="1" value="30" /></label>
                       <label>Duración <span>min/apertura</span><input id="doorMinutes" type="number" min="0" step="0.1" value="1" /></label>
                       <label>Protección de puerta<select id="doorProtection"><option value="1">Sin protección</option><option value="0.72">Cortina hawaiana</option><option value="0.50">Cortina de aire</option><option value="0.35">Puerta rápida</option><option value="0.20">Antecámara + puerta rápida</option></select></label>
+                      <label>Altitud <span>m</span><input id="altitudeM" type="number" step="10" value="0" /></label>
+                      <label>Presión atmosférica <span>kPa</span><input id="atmosphericPressureKPa" type="number" min="0" step="0.1" value="0" /></label>
                     </div>
                   </div>
                 </div>
@@ -350,6 +354,7 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
                   </div>
                   <div class="form-grid three">
                     <label>Producto entrante <span>kg/día</span><input id="productMass" type="number" min="0" step="10" value="1000" /></label>
+                    <label>Inventario almacenado <span>kg</span><input id="inventoryMass" type="number" min="0" step="10" value="5000" /></label>
                     <label>Temperatura de entrada <span>°C</span><input id="productInTemp" type="number" step="0.1" value="5" /></label>
                     <label>Temperatura final <span>°C</span><input id="productOutTemp" type="number" step="0.1" value="-18" /></label>
                     <label>Tiempo objetivo <span>h</span><input id="productHours" type="number" min="0.1" max="24" step="0.5" value="18" /></label>
@@ -379,8 +384,10 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
                     <label>Horas iluminación <span>h/día</span><input id="lightingHours" type="number" min="0" max="24" step="0.5" value="6" /></label>
                     <label>Ventiladores evaporador <span>W</span><input id="fanWatts" type="number" min="0" step="10" value="900" /></label>
                     <label>Horas ventiladores <span>h/día</span><input id="fanHours" type="number" min="0" max="24" step="0.5" value="20" /></label>
-                    <label>Otros motores/equipos <span>W</span><input id="otherWatts" type="number" min="0" step="10" value="500" /></label>
-                    <label>Horas otros equipos <span>h/día</span><input id="otherHours" type="number" min="0" max="24" step="0.5" value="4" /></label>
+                    <label>Bombas <span>W</span><input id="pumpWatts" type="number" min="0" step="10" value="0" /></label>
+                    <label>Horas bombas <span>h/día</span><input id="pumpHours" type="number" min="0" max="24" step="0.5" value="0" /></label>
+                    <label>Auxiliares <span>W</span><input id="otherWatts" type="number" min="0" step="10" value="500" /></label>
+                    <label>Horas auxiliares <span>h/día</span><input id="otherHours" type="number" min="0" max="24" step="0.5" value="4" /></label>
                     <label>Deshielo eléctrico <span>kW</span><input id="defrostKw" type="number" min="0" step="0.1" value="6" /></label>
                     <label>Deshielos por día<input id="defrostCount" type="number" min="0" step="1" value="3" /></label>
                     <label>Duración por deshielo <span>min</span><input id="defrostMinutes" type="number" min="0" step="1" value="25" /></label>
@@ -511,6 +518,7 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
     </form>
   </dialog>
 
+  <script src="calc-engine.js"></script>
   <script>
 'use strict';
 
@@ -554,52 +562,15 @@ let toastTimer;
 
 const CATEGORY_COLORS = ['#0783c5','#36a5d8','#38a879','#e39a28','#7259c6','#d85d73','#5a7d93'];
 const LOAD_COLORS = ['#0783c5','#35a7d7','#37a57b','#e4a027','#7a63c7','#d65e72'];
-const APPLICATION_FACTORS = {
-  'Conservación media temperatura': { capacity:1.00 },
-  'Conservación de congelados': { capacity:1.03 },
-  'Preenfriamiento': { capacity:1.08 },
-  'Blast freezer': { capacity:1.18 },
-  'Proceso alimentario': { capacity:1.07 },
-  'Farmacéutica': { capacity:1.05 },
-  'Cuarto climatizado': { capacity:0.95 }
-};
-const REFRIGERANT_FACTORS = {
-  'R404A': { capacity:1.00, cop:0.94 },
-  'R448A': { capacity:1.01, cop:1.03 },
-  'R449A': { capacity:1.01, cop:1.02 },
-  'R134a': { capacity:0.96, cop:1.04 },
-  'R290': { capacity:1.03, cop:1.06 },
-  'R744 (CO₂)': { capacity:0.98, cop:0.95 },
-  'R717 (NH₃)': { capacity:1.06, cop:1.10 },
-  'Glicol': { capacity:0.90, cop:0.88 }
-};
-const SYSTEM_FACTORS = {
-  'Expansión directa': { capacity:1.00, cop:1.00 },
-  'Rack de compresores': { capacity:0.98, cop:1.05 },
-  'Sistema secundario': { capacity:1.06, cop:0.92 },
-  'Recirculación bombeada': { capacity:0.97, cop:1.03 },
-  'CO₂ transcrítico': { capacity:1.08, cop:0.90 },
-  'Dos etapas': { capacity:0.96, cop:1.08 }
-};
-
 function num(id) {
   const value = parseFloat($(id).value);
   return Number.isFinite(value) ? value : 0;
 }
 
-function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
-function getFactor(map, key, fallback = { capacity:1, cop:1 }) { return map[key] || fallback; }
+function clamp(value, min, max) { return FrigoCalcEngine.clamp(value, min, max); }
 
 function selectionFactors(data) {
-  const application = getFactor(APPLICATION_FACTORS, data.applicationType, { capacity:1 });
-  const refrigerant = getFactor(REFRIGERANT_FACTORS, data.refrigerant);
-  const system = getFactor(SYSTEM_FACTORS, data.systemType);
-  const lift = Math.max(1, data.condTemp - data.evapTemp);
-  const referenceLift = 70;
-  const liftCapacity = clamp(1 + (lift - referenceLift) * 0.006, 0.85, 1.28);
-  const capacity = application.capacity * liftCapacity * system.capacity / Math.max(refrigerant.capacity, 0.1);
-  const cop = refrigerant.cop * system.cop;
-  return { application, refrigerant, system, lift, liftCapacity, capacity, cop };
+  return FrigoCalcEngine.performanceFactors(data);
 }
 
 function showToast(message) {
@@ -662,48 +633,23 @@ function updateProductFields() {
 }
 
 function saturationPressureKPa(t) {
-  return 0.61078 * Math.exp((17.2694 * t) / (t + 237.29));
+  return FrigoCalcEngine.saturationPressureKPa(t);
 }
 
 function humidityRatio(t, rh, pressureKPa = 101.325) {
-  const pv = clamp(rh, 0, 100) / 100 * saturationPressureKPa(t);
-  return 0.62198 * pv / Math.max(0.1, pressureKPa - pv);
+  return FrigoCalcEngine.humidityRatio(t, rh, pressureKPa);
 }
 
 function moistAirEnthalpy(t, rh) {
-  const w = humidityRatio(t, rh);
-  return 1.006 * t + w * (2501 + 1.86 * t);
+  return FrigoCalcEngine.moistAirEnthalpy(t, rh);
 }
 
 function dryAirDensity(t, rh, pressurePa = 101325) {
-  const w = humidityRatio(t, rh);
-  return pressurePa / (287.055 * (t + 273.15) * (1 + 1.6078 * w));
+  return FrigoCalcEngine.dryAirDensity(t, rh, pressurePa / 1000);
 }
 
 function productThermalEnergy(data) {
-  const m = data.productMass;
-  const ti = data.productInTemp;
-  const tf = data.productOutTemp;
-  const fp = data.freezingPoint;
-  let sensibleAbove = 0;
-  let latent = 0;
-  let sensibleBelow = 0;
-
-  if (m <= 0 || ti === tf) return { totalKwh: 0, sensibleAbove, latent, sensibleBelow };
-
-  if (ti > tf) {
-    if (tf >= fp) {
-      sensibleAbove = m * data.cpAbove * (ti - tf);
-    } else if (ti <= fp) {
-      sensibleBelow = m * data.cpBelow * (ti - tf);
-    } else {
-      sensibleAbove = m * data.cpAbove * (ti - fp);
-      latent = m * data.latentHeat;
-      sensibleBelow = m * data.cpBelow * (fp - tf);
-    }
-  }
-
-  return { totalKwh: (sensibleAbove + latent + sensibleBelow) / 3600, sensibleAbove, latent, sensibleBelow };
+  return FrigoCalcEngine.productThermalEnergy(data);
 }
 
 function collectData() {
@@ -713,107 +659,25 @@ function collectData() {
     applicationType: $('#applicationType').value,
     length: num('#length'), width: num('#width'), height: num('#height'),
     insideTemp: num('#insideTemp'), outsideTemp: num('#outsideTemp'),
-    insideRH: num('#insideRH'), outsideRH: num('#outsideRH'), solarCorrection: num('#solarCorrection'),
-    wallU: num('#wallU'), roofU: num('#roofU'), floorU: num('#floorU'),
-    doorWidth: num('#doorWidth'), doorHeight: num('#doorHeight'), doorOpenings: num('#doorOpenings'), doorMinutes: num('#doorMinutes'), doorProtection: num('#doorProtection'),
+    insideRH: num('#insideRH'), outsideRH: num('#outsideRH'), solarCorrection: num('#solarCorrection'), soilTemp: num('#soilTemp'),
+    wallU: num('#wallU'), roofU: num('#roofU'), floorU: num('#floorU'), doorU: num('#doorU'),
+    doorWidth: num('#doorWidth'), doorHeight: num('#doorHeight'), doorOpenings: num('#doorOpenings'), doorMinutes: num('#doorMinutes'), doorProtection: num('#doorProtection'), altitudeM: num('#altitudeM'), atmosphericPressureKPa: num('#atmosphericPressureKPa'),
     productId: p.id, productName: p.name, productCategory: p.category,
-    productMass: num('#productMass'), productInTemp: num('#productInTemp'), productOutTemp: num('#productOutTemp'), productHours: num('#productHours'),
+    productMass: num('#productMass'), dailyProductMass: num('#productMass'), inventoryMass: num('#inventoryMass'), productInTemp: num('#productInTemp'), productOutTemp: num('#productOutTemp'), productHours: num('#productHours'),
     packagingPct: num('#packagingPct'), packagingCp: num('#packagingCp'), cpAbove: num('#cpAbove'), cpBelow: num('#cpBelow'), latentHeat: num('#latentHeat'), freezingPoint: num('#freezingPoint'), respiration: num('#respiration'),
     peopleCount: num('#peopleCount'), peopleHours: num('#peopleHours'), peopleWatts: num('#peopleWatts'),
-    lightingDensity: num('#lightingDensity'), lightingHours: num('#lightingHours'), fanWatts: num('#fanWatts'), fanHours: num('#fanHours'), otherWatts: num('#otherWatts'), otherHours: num('#otherHours'),
+    lightingDensity: num('#lightingDensity'), lightingHours: num('#lightingHours'), fanWatts: num('#fanWatts'), fanHours: num('#fanHours'), pumpWatts: num('#pumpWatts'), pumpHours: num('#pumpHours'), otherWatts: num('#otherWatts'), otherHours: num('#otherHours'), auxiliaryWatts: num('#otherWatts'), auxiliaryHours: num('#otherHours'),
     defrostKw: num('#defrostKw'), defrostCount: num('#defrostCount'), defrostMinutes: num('#defrostMinutes'), defrostFraction: num('#defrostFraction'),
     runtimeHours: num('#runtimeHours'), safetyMargin: num('#safetyMargin'), evapTemp: num('#evapTemp'), condTemp: num('#condTemp'), carnotEfficiency: num('#carnotEfficiency'), electricRate: num('#electricRate'), refrigerant: $('#refrigerant').value, systemType: $('#systemType').value
   };
 }
 
 function calculateFromData(data) {
-  const floorArea = data.length * data.width;
-  const wallArea = 2 * (data.length * data.height + data.width * data.height);
-  const roofArea = floorArea;
-  const deltaWall = Math.max(0, data.outsideTemp + data.solarCorrection - data.insideTemp);
-  const deltaFloor = Math.max(0, Math.min(data.outsideTemp, 24) - data.insideTemp);
-
-  const transmissionWalls = data.wallU * wallArea * deltaWall / 1000 * 24;
-  const transmissionRoof = data.roofU * roofArea * deltaWall / 1000 * 24;
-  const transmissionFloor = data.floorU * floorArea * deltaFloor / 1000 * 24;
-  const transmission = transmissionWalls + transmissionRoof + transmissionFloor;
-
-  const doorArea = data.doorWidth * data.doorHeight;
-  const deltaT = Math.abs(data.outsideTemp - data.insideTemp);
-  const stackVelocity = doorArea > 0 ? 0.5 * Math.sqrt(2 * 9.81 * Math.max(data.doorHeight, 0.1) * deltaT / Math.max(data.insideTemp + 273.15, 180)) : 0;
-  const openSeconds = data.doorOpenings * data.doorMinutes * 60;
-  const infiltratedVolume = doorArea * stackVelocity * openSeconds * data.doorProtection;
-  const massDryAir = infiltratedVolume * dryAirDensity(data.outsideTemp, data.outsideRH);
-  const enthalpyDifference = Math.max(0, moistAirEnthalpy(data.outsideTemp, data.outsideRH) - moistAirEnthalpy(data.insideTemp, data.insideRH));
-  const infiltration = massDryAir * enthalpyDifference / 3600;
-
-  const productDetail = productThermalEnergy(data);
-  const packagingMass = data.productMass * data.packagingPct / 100;
-  const packaging = packagingMass * data.packagingCp * Math.abs(data.productInTemp - data.productOutTemp) / 3600;
-  const respiration = data.respiration * (data.productMass / 1000) * 24 / 1000;
-  const product = productDetail.totalKwh + packaging + respiration;
-
-  const people = data.peopleCount * data.peopleWatts / 1000 * data.peopleHours;
-  const lighting = floorArea * data.lightingDensity / 1000 * data.lightingHours;
-  const other = data.otherWatts / 1000 * data.otherHours;
-  const internal = people + lighting + other;
-  const fans = data.fanWatts / 1000 * data.fanHours;
-  const defrost = data.defrostKw * data.defrostCount * data.defrostMinutes / 60 * data.defrostFraction / 100;
-  const equipment = fans + defrost;
-
-  const loads = [
-    { key:'transmission', label:'Transmisión', energy: transmission, detail:{ walls:transmissionWalls, roof:transmissionRoof, floor:transmissionFloor } },
-    { key:'infiltration', label:'Infiltración', energy: infiltration, detail:{ infiltratedVolume, enthalpyDifference } },
-    { key:'product', label:'Producto', energy: product, detail:{ ...productDetail, packaging, respiration } },
-    { key:'internal', label:'Cargas internas', energy: internal, detail:{ people, lighting, other } },
-    { key:'equipment', label:'Ventiladores y deshielo', energy: equipment, detail:{ fans, defrost } }
-  ];
-
-  const totalEnergy = loads.reduce((sum, item) => sum + item.energy, 0);
-  const runtime = clamp(data.runtimeHours, 1, 24);
-  const energyCapacity = totalEnergy / runtime;
-  const productWindow = clamp(data.productHours || runtime, 0.1, 24);
-  const processCapacity = product / productWindow + (totalEnergy - product) / runtime;
-  const capacityBeforeMargin = Math.max(energyCapacity, processCapacity);
-  const averageLoad = totalEnergy / 24;
-
-  const factors = selectionFactors({
-    applicationType: data.applicationType,
-    refrigerant: data.refrigerant,
-    systemType: data.systemType,
-    condTemp: data.condTemp,
-    evapTemp: data.evapTemp
-  });
-  const requiredCapacity = capacityBeforeMargin * factors.capacity * (1 + data.safetyMargin / 100);
-  const btu = requiredCapacity * 3412.142;
-  const tr = requiredCapacity / 3.5168525;
-  const te = data.evapTemp + 273.15;
-  const tc = data.condTemp + 273.15;
-  const carnotCop = tc > te ? te / (tc - te) : 0;
-  const estimatedCop = clamp(carnotCop * data.carnotEfficiency / 100 * factors.cop, 0.5, 8);
-  const compressorInput = requiredCapacity / estimatedCop;
-  const monthlyConsumption = compressorInput * runtime * 30;
-  const monthlyCost = monthlyConsumption * data.electricRate;
-
-  loads.forEach(item => item.percent = totalEnergy > 0 ? item.energy / totalEnergy * 100 : 0);
-  const dominant = [...loads].sort((a,b) => b.energy - a.energy)[0];
-
-  return {
-    timestamp: new Date().toISOString(), data, loads, totalEnergy, requiredCapacity, capacityBeforeMargin, energyCapacity, processCapacity,
-    averageLoad, btu, tr, estimatedCop, compressorInput, monthlyConsumption, monthlyCost, dominant, factors,
-    geometry:{ floorArea, wallArea, roofArea, volume: floorArea * data.height, totalArea: floorArea + roofArea + wallArea },
-    air:{ infiltratedVolume, enthalpyDifference, massDryAir }
-  };
+  return FrigoCalcEngine.calculate(data);
 }
 
 function validateData(data) {
-  const errors = [];
-  if (data.length <= 0 || data.width <= 0 || data.height <= 0) errors.push('Las dimensiones deben ser mayores a cero.');
-  if (data.runtimeHours <= 0) errors.push('Las horas de refrigeración deben ser mayores a cero.');
-  if (data.evapTemp >= data.insideTemp) errors.push('La temperatura de evaporación debe ser menor que la temperatura interior.');
-  if (data.condTemp <= data.evapTemp) errors.push('La temperatura de condensación debe ser mayor que la de evaporación.');
-  if (data.productMass < 0) errors.push('La masa de producto no puede ser negativa.');
-  return errors;
+  return FrigoCalcEngine.validateData(data);
 }
 
 function runCalculation(options = {}) {
@@ -829,7 +693,7 @@ function runCalculation(options = {}) {
     renderReport();
     $('#resultsSection').classList.remove('hidden');
     $('#liveCapacity').textContent = `${nf.format(result.requiredCapacity)} kW`;
-    $('#liveCapacity').nextElementSibling.textContent = `${nf.format(result.tr)} TR · margen ${data.safetyMargin}% · factor ×${nf.format(result.factors.capacity)}`;
+    $('#liveCapacity').nextElementSibling.textContent = `${nf.format(result.tr)} TR · margen ${data.safetyMargin}% · COP ${nf.format(result.estimatedCop)}`;
     $('#resultsSection').scrollIntoView({ behavior:'smooth', block:'start' });
     showToast('Cálculo completado correctamente.');
   }
@@ -857,7 +721,6 @@ function renderResults(result) {
 
 function buildWarnings(result) {
   const { data, loads, estimatedCop, requiredCapacity } = result;
-  const factors = result.factors || selectionFactors(data);
   const infiltration = loads.find(x => x.key === 'infiltration');
   const product = loads.find(x => x.key === 'product');
   const transmission = loads.find(x => x.key === 'transmission');
@@ -867,7 +730,7 @@ function buildWarnings(result) {
   if (product.percent > 50) list.push({ title:'Carga de producto dominante', text:'La capacidad depende fuertemente de la rotación y del tiempo objetivo. Confirma masa y temperatura de entrada.' });
   if (transmission.percent > 35) list.push({ title:'Oportunidad de aislamiento', text:'La envolvente tiene un peso importante. Compara un panel con menor valor U.' });
   if (data.runtimeHours < 16) list.push({ title:'Pocas horas disponibles', text:'La capacidad de selección aumenta porque la energía diaria debe retirarse en menos horas.' });
-  if (Math.abs(factors.capacity - 1) > 0.05) list.push({ title:'Factor de selección aplicado', text:`Aplicación, refrigerante, sistema y lift térmico ajustan la capacidad en ×${nf.format(factors.capacity)}.` });
+  if (result.directElectricKwhDay > 0) list.push({ good:true, title:'Consumo directo separado', text:`Ventiladores, deshielo, bombas y auxiliares suman ${nf.format(result.directElectricKwhDay)} kWh/día eléctricos antes del costo mensual.` });
   if (estimatedCop < 1.5) list.push({ title:'COP estimado bajo', text:'Revisa el diferencial entre evaporación y condensación; puede indicar alto consumo y descarga severa.' });
   else list.push({ good:true, title:'COP preliminar razonable', text:`El valor estimado es ${nf.format(estimatedCop)}. Debe validarse con software del fabricante.` });
   if (requiredCapacity > 0) list.push({ good:true, title:'Margen aplicado de forma explícita', text:`Se añadió ${data.safetyMargin}% después de convertir la energía diaria a capacidad durante ${data.runtimeHours} h/día.` });
@@ -1001,7 +864,7 @@ function applyData(d) {
     updateProductFields();
   }
   const map = {
-    projectName:'projectName', applicationType:'applicationType', length:'length', width:'width', height:'height', insideTemp:'insideTemp', outsideTemp:'outsideTemp', insideRH:'insideRH', outsideRH:'outsideRH', solarCorrection:'solarCorrection', wallU:'wallU', roofU:'roofU', floorU:'floorU', doorWidth:'doorWidth', doorHeight:'doorHeight', doorOpenings:'doorOpenings', doorMinutes:'doorMinutes', doorProtection:'doorProtection', productMass:'productMass', productInTemp:'productInTemp', productOutTemp:'productOutTemp', productHours:'productHours', packagingPct:'packagingPct', packagingCp:'packagingCp', cpAbove:'cpAbove', cpBelow:'cpBelow', latentHeat:'latentHeat', freezingPoint:'freezingPoint', respiration:'respiration', peopleCount:'peopleCount', peopleHours:'peopleHours', peopleWatts:'peopleWatts', lightingDensity:'lightingDensity', lightingHours:'lightingHours', fanWatts:'fanWatts', fanHours:'fanHours', otherWatts:'otherWatts', otherHours:'otherHours', defrostKw:'defrostKw', defrostCount:'defrostCount', defrostMinutes:'defrostMinutes', defrostFraction:'defrostFraction', runtimeHours:'runtimeHours', safetyMargin:'safetyMargin', evapTemp:'evapTemp', condTemp:'condTemp', carnotEfficiency:'carnotEfficiency', electricRate:'electricRate', refrigerant:'refrigerant', systemType:'systemType'
+    projectName:'projectName', applicationType:'applicationType', length:'length', width:'width', height:'height', insideTemp:'insideTemp', outsideTemp:'outsideTemp', insideRH:'insideRH', outsideRH:'outsideRH', solarCorrection:'solarCorrection', soilTemp:'soilTemp', wallU:'wallU', roofU:'roofU', floorU:'floorU', doorU:'doorU', doorWidth:'doorWidth', doorHeight:'doorHeight', doorOpenings:'doorOpenings', doorMinutes:'doorMinutes', doorProtection:'doorProtection', altitudeM:'altitudeM', atmosphericPressureKPa:'atmosphericPressureKPa', productMass:'productMass', dailyProductMass:'productMass', inventoryMass:'inventoryMass', productInTemp:'productInTemp', productOutTemp:'productOutTemp', productHours:'productHours', packagingPct:'packagingPct', packagingCp:'packagingCp', cpAbove:'cpAbove', cpBelow:'cpBelow', latentHeat:'latentHeat', freezingPoint:'freezingPoint', respiration:'respiration', peopleCount:'peopleCount', peopleHours:'peopleHours', peopleWatts:'peopleWatts', lightingDensity:'lightingDensity', lightingHours:'lightingHours', fanWatts:'fanWatts', fanHours:'fanHours', pumpWatts:'pumpWatts', pumpHours:'pumpHours', otherWatts:'otherWatts', otherHours:'otherHours', auxiliaryWatts:'otherWatts', auxiliaryHours:'otherHours', defrostKw:'defrostKw', defrostCount:'defrostCount', defrostMinutes:'defrostMinutes', defrostFraction:'defrostFraction', runtimeHours:'runtimeHours', safetyMargin:'safetyMargin', evapTemp:'evapTemp', condTemp:'condTemp', carnotEfficiency:'carnotEfficiency', electricRate:'electricRate', refrigerant:'refrigerant', systemType:'systemType'
   };
   Object.entries(map).forEach(([key,id]) => { if (d[key] !== undefined && $(`#${id}`)) $(`#${id}`).value = d[key]; });
   updateLiveSummary();
@@ -1018,24 +881,33 @@ function renderReport() {
   }
   const r = lastResult, d = r.data;
   const factors = r.factors || selectionFactors(d);
+  const geometry = r.geometry || FrigoCalcEngine.geometry(d);
+  const pressureKPa = r.air?.pressureKPa ?? FrigoCalcEngine.pressureKPa(d);
+  const dailyProductMass = d.dailyProductMass ?? d.productMass ?? 0;
+  const inventoryMass = d.inventoryMass ?? d.productMass ?? 0;
+  const soilTemp = d.soilTemp ?? Math.min(Number(d.outsideTemp) || 0, 24);
+  const doorU = d.doorU ?? d.wallU ?? 0;
+  const compressorKwhDay = r.compressorKwhDay ?? ((r.totalEnergy || 0) / Math.max(r.estimatedCop || 0, 0.1));
+  const directElectricKwhDay = r.directElectricKwhDay ?? r.directElectric?.total ?? 0;
   $('#reportCapacity').textContent = `${nf.format(r.requiredCapacity)} kW`;
   $('#reportCapacityAlt').textContent = `${nf.format(r.btu)} BTU/h · ${nf.format(r.tr)} TR`;
   $('#reportBody').innerHTML = `
     <section class="report-section"><h2>1. Resumen ejecutivo</h2><div class="report-grid">
       ${reportField('Aplicación',d.applicationType)}${reportField('Capacidad de selección',nf.format(r.requiredCapacity)+' kW')}${reportField('Energía diaria',nf.format(r.totalEnergy)+' kWh/día')}
       ${reportField('Carga promedio',nf.format(r.averageLoad)+' kW')}${reportField('COP preliminar',nf.format(r.estimatedCop))}${reportField('Consumo mensual',nf.format(r.monthlyConsumption)+' kWh')}
-    </div><div class="report-note">La capacidad considera tanto la energía frigorífica diaria durante ${d.runtimeHours} horas disponibles como el tiempo objetivo de ${d.productHours} horas para el producto. Después se aplicó un margen de ${d.safetyMargin}% y un factor de selección ×${nf.format(factors.capacity)} por aplicación, refrigerante, configuración y lift térmico. La selección final deberá verificarse con datos certificados del fabricante.</div></section>
+    </div><div class="report-note">La carga térmica se calcula independientemente del refrigerante y de la configuración del sistema. La capacidad de selección parte de la energía frigorífica diaria, el tiempo objetivo del producto y las ${d.runtimeHours} horas disponibles; después se aplica únicamente el margen explícito de ${d.safetyMargin}%. El consumo mensual suma compresor por COP más ventiladores, deshielo, bombas y auxiliares eléctricos directos.</div></section>
     <section class="report-section"><h2>2. Condiciones de diseño</h2><div class="report-grid">
-      ${reportField('Dimensiones',`${d.length} × ${d.width} × ${d.height} m`)}${reportField('Volumen',nf.format(r.geometry.volume)+' m³')}${reportField('Área envolvente',nf.format(r.geometry.totalArea)+' m²')}
-      ${reportField('Temperatura interior',d.insideTemp+' °C')}${reportField('Temperatura exterior',d.outsideTemp+' °C')}${reportField('Humedad exterior',d.outsideRH+' %')}
-      ${reportField('U muros',d.wallU+' W/m²K')}${reportField('U techo',d.roofU+' W/m²K')}${reportField('U piso',d.floorU+' W/m²K')}
+      ${reportField('Dimensiones',`${d.length} × ${d.width} × ${d.height} m`)}${reportField('Volumen',nf.format(geometry.volume)+' m³')}${reportField('Área envolvente',nf.format(geometry.totalArea)+' m²')}
+      ${reportField('Temperatura interior',d.insideTemp+' °C')}${reportField('Temperatura exterior',d.outsideTemp+' °C')}${reportField('Temperatura suelo',soilTemp+' °C')}
+      ${reportField('U muros',d.wallU+' W/m²K')}${reportField('U puerta',doorU+' W/m²K')}${reportField('Presión cálculo',nf.format(pressureKPa)+' kPa')}
     </div></section>
     <section class="report-section"><h2>3. Producto y operación</h2><div class="report-grid">
-      ${reportField('Producto',d.productName)}${reportField('Masa diaria',nf.format(d.productMass)+' kg/día')}${reportField('Temperaturas',`${d.productInTemp} a ${d.productOutTemp} °C`)}
+      ${reportField('Producto',d.productName)}${reportField('Masa diaria',nf.format(dailyProductMass)+' kg/día')}${reportField('Inventario',nf.format(inventoryMass)+' kg')}
+      ${reportField('Temperaturas',`${d.productInTemp} a ${d.productOutTemp} °C`)}
       ${reportField('Punto de congelación',d.freezingPoint+' °C')}${reportField('Tiempo objetivo',d.productHours+' h')}${reportField('Empaque',d.packagingPct+' %')}
     </div></section>
     <section class="report-section"><h2>4. Desglose de cargas</h2><table class="report-table"><thead><tr><th>Partida</th><th>Energía diaria</th><th>Participación</th><th>Capacidad equivalente*</th></tr></thead><tbody>${r.loads.map(l=>`<tr><td>${l.label}</td><td>${nf.format(l.energy)} kWh/día</td><td>${nf.format(l.percent)}%</td><td>${nf.format(l.energy/d.runtimeHours)} kW</td></tr>`).join('')}<tr><td><strong>Total</strong></td><td><strong>${nf.format(r.totalEnergy)} kWh/día</strong></td><td>100%</td><td><strong>${nf.format(r.capacityBeforeMargin)} kW</strong></td></tr></tbody></table><div class="report-note">*Capacidad equivalente calculada con ${d.runtimeHours} horas de operación. La simultaneidad y los ciclos reales deben revisarse durante el diseño detallado.</div></section>
-    <section class="report-section"><h2>5. Sistema preliminar</h2><div class="report-grid">${reportField('Refrigerante',d.refrigerant)}${reportField('Configuración',d.systemType)}${reportField('Evaporación',d.evapTemp+' °C')}${reportField('Condensación',d.condTemp+' °C')}${reportField('Lift térmico',nf.format(factors.lift)+' K')}${reportField('Factor selección','×'+nf.format(factors.capacity))}${reportField('Potencia eléctrica estimada',nf.format(r.compressorInput)+' kW')}${reportField('Costo mensual',money.format(r.monthlyCost))}</div></section>
+    <section class="report-section"><h2>5. Sistema preliminar</h2><div class="report-grid">${reportField('Refrigerante',d.refrigerant)}${reportField('Configuración',d.systemType)}${reportField('Evaporación',d.evapTemp+' °C')}${reportField('Condensación',d.condTemp+' °C')}${reportField('Lift térmico',nf.format(factors.lift)+' K')}${reportField('COP desempeño',nf.format(r.estimatedCop))}${reportField('Compresor eléctrico',nf.format(compressorKwhDay)+' kWh/día')}${reportField('Eléctrico directo',nf.format(directElectricKwhDay)+' kWh/día')}${reportField('Costo mensual',money.format(r.monthlyCost))}</div></section>
     <section class="report-section"><h2>6. Observaciones</h2>${buildWarnings(r).map(w=>`<div class="report-note"><strong>${w.title}:</strong> ${w.text}</div>`).join('')}</section>`;
 }
 
@@ -1093,7 +965,7 @@ function initializeEvents() {
     if(type==='panel') addScenario('Mayor aislamiento',{wallU:num('#wallU')*.75,roofU:num('#roofU')*.75,floorU:num('#floorU')*.8});
     if(type==='door') addScenario('Puerta rápida',{doorProtection:.35});
     if(type==='runtime') addScenario('22 horas de operación',{runtimeHours:22});
-    if(type==='growth') addScenario('30% más producto',{productMass:num('#productMass')*1.3});
+    if(type==='growth') addScenario('30% más producto',{productMass:num('#productMass')*1.3,dailyProductMass:num('#productMass')*1.3});
   }));
   $('#importProjectButton').addEventListener('click', () => $('#projectFileInput').click());
   $('#projectFileInput').addEventListener('change', async e => {

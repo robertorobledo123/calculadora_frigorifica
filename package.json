@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "test": "node test/calc-engine.test.js"
+  }
+}
