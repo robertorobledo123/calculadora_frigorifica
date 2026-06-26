@@ -386,18 +386,27 @@ function switchPage(page){
   if(page === 'projects') renderProjects();
 }
 
+function bindClick(selector, handler){
+  const element = $(selector);
+  if(!element) return;
+  element.onclick = event => {
+    event.preventDefault();
+    handler(event);
+  };
+}
+
 function init(){
   renderDoors(); renderScenario(); renderProjects();
   $('#scenario').addEventListener('change', renderScenario);
-  $('#calculateButton').addEventListener('click', calculate);
-  $('#saveButton').addEventListener('click', () => saveProject(false));
-  $('#duplicateButton').addEventListener('click', () => saveProject(true));
-  $('#exportButton').addEventListener('click', exportJson);
-  $('#printButton').addEventListener('click', () => window.print());
-  $('#themeButton').addEventListener('click', () => document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-  $('#addDoorButton').addEventListener('click', () => { doors.push({ name:`Puerta ${doors.length+1}`, width:1, height:2, uValue:1.8, openingsPerDay:10, minutesOpen:1, protectionFactor:1 }); renderDoors(); });
+  bindClick('#calculateButton', calculate);
+  bindClick('#saveButton', () => saveProject(false));
+  bindClick('#duplicateButton', () => saveProject(true));
+  bindClick('#exportButton', exportJson);
+  bindClick('#printButton', () => window.print());
+  bindClick('#themeButton', () => document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  bindClick('#addDoorButton', () => { doors.push({ name:`Puerta ${doors.length+1}`, width:1, height:2, uValue:1.8, openingsPerDay:10, minutesOpen:1, protectionFactor:1 }); renderDoors(); });
   $$('.nav button').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
-  $('#importButton').addEventListener('click', () => $('#importFile').click());
+  bindClick('#importButton', () => $('#importFile').click());
   $('#importFile').addEventListener('change', async event => {
     const file = event.target.files[0]; if(!file) return;
     const parsed = JSON.parse(await file.text());
