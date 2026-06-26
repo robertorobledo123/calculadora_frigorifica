@@ -51,6 +51,8 @@ button { cursor: pointer; }
 .logo-dark { display:none; }
 [data-theme="dark"] .logo-light { display:none; }
 [data-theme="dark"] .logo-dark { display:block; }
+[data-theme="dark"] .brand-logo.logo-dark,
+[data-theme="dark"] .report-logo.logo-dark { background:transparent; padding:0; border-radius:0; box-shadow:none; }
 .main-nav { display: grid; gap: 7px; }
 .nav-item { border: 0; background: transparent; color: #9fb2c4; padding: 12px 14px; border-radius: 11px; text-align: left; display: flex; gap: 12px; align-items: center; font-weight: 650; transition: .2s; }
 .nav-item span { width: 22px; text-align: center; font-size: 18px; }
@@ -1126,4 +1128,3 @@ init();
   </script>
 </body>
 </html>
-
