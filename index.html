@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Frigo Espacios - Plataforma web para cálculos frigoríficos" />
   <title>Frigo Espacios</title>
+  <link rel="icon" href="data:," />
   <style>
 :root {
   --bg: #f4f7fb;
@@ -187,6 +188,7 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
         <button class="nav-item" data-page="scenarios"><span>⇄</span> Escenarios</button>
         <button class="nav-item" data-page="projects"><span>▣</span> Proyectos</button>
         <button class="nav-item" data-page="report"><span>▤</span> Reporte</button>
+        <a class="nav-item" href="industrial.html"><span>⚙</span> Industrial</a>
       </nav>
 
       <div class="sidebar-foot">
@@ -207,6 +209,7 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
         </div>
         <div class="top-actions">
           <button class="btn ghost" id="themeButton" title="Cambiar tema">◐</button>
+          <a class="btn secondary" href="industrial.html">Industrial</a>
           <button class="btn secondary" id="saveProjectButton">Guardar</button>
           <button class="btn primary" id="topCalculateButton">Calcular</button>
         </div>
@@ -456,10 +459,10 @@ dialog{border:0;padding:0;border-radius:18px;background:transparent;color:var(--
         </section>
 
         <section class="page" id="products">
-          <div class="page-heading"><div><span class="eyebrow">BASE DE DATOS</span><h1>Productos y propiedades térmicas</h1><p>Selecciona un producto para utilizarlo en el cálculo o revisa sus parámetros principales.</p></div><button class="btn primary" id="newProductButton">+ Producto personalizado</button></div>
+          <div class="page-heading"><div><span class="eyebrow">BASE DE DATOS</span><h1>Productos y propiedades térmicas</h1><p>Selecciona un producto para utilizarlo en el cálculo o revisa sus parámetros principales.</p></div><div><button class="btn secondary" id="exportProductsButton">Exportar productos</button><button class="btn secondary" id="importProductsButton">Importar productos</button><button class="btn primary" id="newProductButton">+ Producto personalizado</button><input class="hidden" id="productImportInput" type="file" accept="application/json" /></div></div>
           <div class="panel">
             <div class="table-toolbar"><div class="search-box">⌕ <input id="productSearch" placeholder="Buscar producto o categoría" /></div><span id="productCount"></span></div>
-            <div class="table-scroll"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Cp superior</th><th>Cp inferior</th><th>Calor latente</th><th>P. congelación</th><th></th></tr></thead><tbody id="productTableBody"></tbody></table></div>
+            <div class="table-scroll"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Cp superior</th><th>Cp inferior</th><th>Calor latente</th><th>P. congelación</th><th>Fuente</th><th></th></tr></thead><tbody id="productTableBody"></tbody></table></div>
           </div>
         </section>
 
@@ -554,10 +557,34 @@ const PRODUCTS = [
   { id:'flowers', name:'Flores cortadas', category:'Floricultura', cpAbove:3.90, cpBelow:1.89, latent:300, freeze:-0.5, respiration:28, icon:'🌷' }
 ];
 
-let products = [...PRODUCTS, ...JSON.parse(localStorage.getItem('frigocalc_custom_products') || '[]')];
+const SCHEMA_VERSION = FrigoCalcEngine.SCHEMA_VERSION || 2;
+const PRELIMINARY_SOURCE = 'Dato preliminar sin fuente verificada';
+function safeParseStorage(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch { return fallback; }
+}
+function normalizeProduct(product) {
+  return {
+    source: PRELIMINARY_SOURCE,
+    edition: '',
+    page: '',
+    validRange: '',
+    reviewedAt: '2026-06-26',
+    notes: 'Valor conservado por compatibilidad; requiere fuente verificada para selección final.',
+    waterContent: null,
+    respirationRefTemp: product.respiration ? 'No verificada' : '',
+    ...product,
+    unverified: !product.source || product.source === PRELIMINARY_SOURCE
+  };
+}
+function migrateProject(record) {
+  return FrigoCalcEngine.migrateProjectRecord ? FrigoCalcEngine.migrateProjectRecord(record) : record;
+}
+
+let products = [...PRODUCTS, ...safeParseStorage('frigocalc_custom_products', [])].map(normalizeProduct);
 let currentStep = 1;
 let lastResult = null;
-let scenarios = JSON.parse(localStorage.getItem('frigocalc_scenarios') || '[]');
+let scenarios = safeParseStorage('frigocalc_scenarios', []);
 let toastTimer;
 
 const CATEGORY_COLORS = ['#0783c5','#36a5d8','#38a879','#e39a28','#7259c6','#d85d73','#5a7d93'];
@@ -655,6 +682,7 @@ function productThermalEnergy(data) {
 function collectData() {
   const p = getSelectedProduct();
   return {
+    schemaVersion: SCHEMA_VERSION,
     projectName: $('#projectName').value.trim() || 'Proyecto sin nombre',
     applicationType: $('#applicationType').value,
     length: num('#length'), width: num('#width'), height: num('#height'),
@@ -662,7 +690,7 @@ function collectData() {
     insideRH: num('#insideRH'), outsideRH: num('#outsideRH'), solarCorrection: num('#solarCorrection'), soilTemp: num('#soilTemp'),
     wallU: num('#wallU'), roofU: num('#roofU'), floorU: num('#floorU'), doorU: num('#doorU'),
     doorWidth: num('#doorWidth'), doorHeight: num('#doorHeight'), doorOpenings: num('#doorOpenings'), doorMinutes: num('#doorMinutes'), doorProtection: num('#doorProtection'), altitudeM: num('#altitudeM'), atmosphericPressureKPa: num('#atmosphericPressureKPa'),
-    productId: p.id, productName: p.name, productCategory: p.category,
+    productId: p.id, productName: p.name, productCategory: p.category, productSource: p.source || PRELIMINARY_SOURCE, productUnverified: Boolean(p.unverified),
     productMass: num('#productMass'), dailyProductMass: num('#productMass'), inventoryMass: num('#inventoryMass'), productInTemp: num('#productInTemp'), productOutTemp: num('#productOutTemp'), productHours: num('#productHours'),
     packagingPct: num('#packagingPct'), packagingCp: num('#packagingCp'), cpAbove: num('#cpAbove'), cpBelow: num('#cpBelow'), latentHeat: num('#latentHeat'), freezingPoint: num('#freezingPoint'), respiration: num('#respiration'),
     peopleCount: num('#peopleCount'), peopleHours: num('#peopleHours'), peopleWatts: num('#peopleWatts'),
@@ -731,6 +759,7 @@ function buildWarnings(result) {
   if (transmission.percent > 35) list.push({ title:'Oportunidad de aislamiento', text:'La envolvente tiene un peso importante. Compara un panel con menor valor U.' });
   if (data.runtimeHours < 16) list.push({ title:'Pocas horas disponibles', text:'La capacidad de selección aumenta porque la energía diaria debe retirarse en menos horas.' });
   if (result.directElectricKwhDay > 0) list.push({ good:true, title:'Consumo directo separado', text:`Ventiladores, deshielo, bombas y auxiliares suman ${nf.format(result.directElectricKwhDay)} kWh/día eléctricos antes del costo mensual.` });
+  if (data.productUnverified) list.push({ title:'Producto sin fuente verificada', text:'Las propiedades térmicas del producto se conservan como dato preliminar y deben confirmarse para selección final.' });
   if (estimatedCop < 1.5) list.push({ title:'COP estimado bajo', text:'Revisa el diferencial entre evaporación y condensación; puede indicar alto consumo y descarga severa.' });
   else list.push({ good:true, title:'COP preliminar razonable', text:`El valor estimado es ${nf.format(estimatedCop)}. Debe validarse con software del fabricante.` });
   if (requiredCapacity > 0) list.push({ good:true, title:'Margen aplicado de forma explícita', text:`Se añadió ${data.safetyMargin}% después de convertir la energía diaria a capacidad durante ${data.runtimeHours} h/día.` });
@@ -787,7 +816,7 @@ function renderProductTable(filter = '') {
   const term = filter.trim().toLowerCase();
   const filtered = products.filter(p => `${p.name} ${p.category}`.toLowerCase().includes(term));
   $('#productCount').textContent = `${filtered.length} productos`;
-  $('#productTableBody').innerHTML = filtered.map(p => `<tr><td><strong>${p.icon || '❄'} ${p.name}</strong></td><td>${p.category}</td><td>${p.cpAbove} kJ/kgK</td><td>${p.cpBelow} kJ/kgK</td><td>${p.latent} kJ/kg</td><td>${p.freeze} °C</td><td><button class="table-action" data-use-product="${p.id}">Usar</button></td></tr>`).join('');
+  $('#productTableBody').innerHTML = filtered.map(p => `<tr><td><strong>${p.icon || '❄'} ${p.name}</strong><small>${p.unverified ? 'Dato preliminar sin fuente verificada' : 'Dato con fuente declarada'}</small></td><td>${p.category}</td><td>${p.cpAbove} kJ/kgK</td><td>${p.cpBelow} kJ/kgK</td><td>${p.latent} kJ/kg</td><td>${p.freeze} °C</td><td>${escapeHtml(p.source || PRELIMINARY_SOURCE)}<small>${escapeHtml(p.page || p.validRange || '')}</small></td><td><button class="table-action" data-use-product="${p.id}">Usar</button></td></tr>`).join('');
   $$('[data-use-product]').forEach(btn => btn.addEventListener('click', () => {
     $('#productSelect').value = btn.dataset.useProduct;
     updateProductFields(); switchPage('calculator'); showStep(2); showToast('Producto aplicado al cálculo.');
@@ -817,9 +846,9 @@ function renderScenarios() {
 }
 
 function saveCurrentProject() {
-  const data = collectData();
-  const projects = JSON.parse(localStorage.getItem('frigocalc_projects') || '[]');
-  const record = { id:crypto.randomUUID(), savedAt:new Date().toISOString(), data, result:lastResult };
+  const data = FrigoCalcEngine.migrateData ? FrigoCalcEngine.migrateData(collectData()) : collectData();
+  const projects = safeParseStorage('frigocalc_projects', []).map(migrateProject);
+  const record = { schemaVersion:SCHEMA_VERSION, id:crypto.randomUUID(), savedAt:new Date().toISOString(), data, result:lastResult };
   projects.unshift(record);
   localStorage.setItem('frigocalc_projects', JSON.stringify(projects));
   renderProjects();
@@ -827,7 +856,8 @@ function saveCurrentProject() {
 }
 
 function renderProjects() {
-  const projects = JSON.parse(localStorage.getItem('frigocalc_projects') || '[]');
+  const projects = safeParseStorage('frigocalc_projects', []).map(migrateProject);
+  localStorage.setItem('frigocalc_projects', JSON.stringify(projects));
   const grid = $('#projectGrid');
   if (!projects.length) {
     grid.innerHTML = `<div class="panel empty-state" style="grid-column:1/-1"><div class="empty-icon">▣</div><h3>No hay proyectos guardados</h3><p>Guarda el proyecto actual para verlo aquí.</p></div>`;
@@ -841,7 +871,7 @@ function renderProjects() {
 function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
 function loadProject(id) {
-  const projects = JSON.parse(localStorage.getItem('frigocalc_projects') || '[]');
+  const projects = safeParseStorage('frigocalc_projects', []).map(migrateProject);
   const project = projects.find(p => p.id === id);
   if (!project) return;
   applyData(project.data);
@@ -852,7 +882,7 @@ function loadProject(id) {
 }
 
 function deleteProject(id) {
-  let projects = JSON.parse(localStorage.getItem('frigocalc_projects') || '[]');
+  let projects = safeParseStorage('frigocalc_projects', []).map(migrateProject);
   projects = projects.filter(p => p.id !== id);
   localStorage.setItem('frigocalc_projects', JSON.stringify(projects));
   renderProjects(); showToast('Proyecto eliminado.');
@@ -894,7 +924,7 @@ function renderReport() {
   $('#reportBody').innerHTML = `
     <section class="report-section"><h2>1. Resumen ejecutivo</h2><div class="report-grid">
       ${reportField('Aplicación',d.applicationType)}${reportField('Capacidad de selección',nf.format(r.requiredCapacity)+' kW')}${reportField('Energía diaria',nf.format(r.totalEnergy)+' kWh/día')}
-      ${reportField('Carga promedio',nf.format(r.averageLoad)+' kW')}${reportField('COP preliminar',nf.format(r.estimatedCop))}${reportField('Consumo mensual',nf.format(r.monthlyConsumption)+' kWh')}
+      ${reportField('Carga promedio',nf.format(r.averageLoad)+' kW')}${reportField('COP preliminar',nf.format(r.estimatedCop))}${reportField('Consumo mensual',nf.format(r.monthlyConsumption)+' kWh')}${reportField('Versión motor',r.engineVersion || FrigoCalcEngine.ENGINE_VERSION || 'N/D')}
     </div><div class="report-note">La carga térmica se calcula independientemente del refrigerante y de la configuración del sistema. La capacidad de selección parte de la energía frigorífica diaria, el tiempo objetivo del producto y las ${d.runtimeHours} horas disponibles; después se aplica únicamente el margen explícito de ${d.safetyMargin}%. El consumo mensual suma compresor por COP más ventiladores, deshielo, bombas y auxiliares eléctricos directos.</div></section>
     <section class="report-section"><h2>2. Condiciones de diseño</h2><div class="report-grid">
       ${reportField('Dimensiones',`${d.length} × ${d.width} × ${d.height} m`)}${reportField('Volumen',nf.format(geometry.volume)+' m³')}${reportField('Área envolvente',nf.format(geometry.totalArea)+' m²')}
@@ -902,7 +932,7 @@ function renderReport() {
       ${reportField('U muros',d.wallU+' W/m²K')}${reportField('U puerta',doorU+' W/m²K')}${reportField('Presión cálculo',nf.format(pressureKPa)+' kPa')}
     </div></section>
     <section class="report-section"><h2>3. Producto y operación</h2><div class="report-grid">
-      ${reportField('Producto',d.productName)}${reportField('Masa diaria',nf.format(dailyProductMass)+' kg/día')}${reportField('Inventario',nf.format(inventoryMass)+' kg')}
+      ${reportField('Producto',d.productName)}${reportField('Masa diaria',nf.format(dailyProductMass)+' kg/día')}${reportField('Inventario',nf.format(inventoryMass)+' kg')}${reportField('Fuente producto',d.productSource || PRELIMINARY_SOURCE)}
       ${reportField('Temperaturas',`${d.productInTemp} a ${d.productOutTemp} °C`)}
       ${reportField('Punto de congelación',d.freezingPoint+' °C')}${reportField('Tiempo objetivo',d.productHours+' h')}${reportField('Empaque',d.packagingPct+' %')}
     </div></section>
@@ -923,7 +953,7 @@ function handleCustomProduct(event) {
   event.preventDefault();
   const name = $('#customName').value.trim();
   if (!name) return;
-  const product = { id:`custom-${Date.now()}`, name, category:$('#customCategory').value.trim() || 'Personalizado', cpAbove:num('#customCpAbove'), cpBelow:num('#customCpBelow'), latent:num('#customLatent'), freeze:num('#customFreeze'), respiration:num('#customResp'), icon:'❄' };
+  const product = normalizeProduct({ id:`custom-${Date.now()}`, name, category:$('#customCategory').value.trim() || 'Personalizado', cpAbove:num('#customCpAbove'), cpBelow:num('#customCpBelow'), latent:num('#customLatent'), freeze:num('#customFreeze'), respiration:num('#customResp'), icon:'❄', source:'Usuario', notes:'Producto personalizado editable.' });
   products.push(product);
   const custom = products.filter(p => p.id.startsWith('custom-'));
   localStorage.setItem('frigocalc_custom_products', JSON.stringify(custom));
@@ -931,8 +961,25 @@ function handleCustomProduct(event) {
   $('#customProductDialog').close(); showToast('Producto personalizado guardado.');
 }
 
+function exportCustomProducts() {
+  const custom = products.filter(p => p.id.startsWith('custom-'));
+  downloadJson(`frigo-productos-${Date.now()}.json`, { schemaVersion:SCHEMA_VERSION, products:custom });
+}
+
+async function importCustomProducts(file) {
+  const parsed = JSON.parse(await file.text());
+  const imported = (Array.isArray(parsed) ? parsed : parsed.products || []).map(product => normalizeProduct({ ...product, id: product.id?.startsWith('custom-') ? product.id : `custom-${Date.now()}-${Math.random().toString(16).slice(2)}` }));
+  const existing = products.filter(p => !p.id.startsWith('custom-'));
+  const custom = [...products.filter(p => p.id.startsWith('custom-')), ...imported];
+  products = [...existing, ...custom];
+  localStorage.setItem('frigocalc_custom_products', JSON.stringify(custom));
+  populateProductSelect();
+  renderProductTable($('#productSearch').value);
+  showToast(`${imported.length} productos importados.`);
+}
+
 function initializeEvents() {
-  $$('.nav-item').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
+  $$('button.nav-item').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
   $$('[data-go]').forEach(btn => btn.addEventListener('click', () => { switchPage(btn.dataset.go); if (btn.dataset.step) showStep(Number(btn.dataset.step)); }));
   $$('.step-tab').forEach(tab => tab.addEventListener('click', () => showStep(Number(tab.dataset.step))));
   $('#nextStepButton').addEventListener('click', () => showStep(currentStep + 1));
@@ -949,6 +996,9 @@ function initializeEvents() {
   $('#printReportButton').addEventListener('click', () => window.print());
   $('#exportJsonButton').addEventListener('click', () => downloadJson(`frigocalc-${Date.now()}.json`, { data:collectData(), result:lastResult }));
   $('#newProductButton').addEventListener('click', () => $('#customProductDialog').showModal());
+  $('#exportProductsButton').addEventListener('click', exportCustomProducts);
+  $('#importProductsButton').addEventListener('click', () => $('#productImportInput').click());
+  $('#productImportInput').addEventListener('change', async e => { if (e.target.files[0]) await importCustomProducts(e.target.files[0]); e.target.value=''; });
   $('#customProductForm').addEventListener('submit', handleCustomProduct);
   $('#addScenarioButton').addEventListener('click', () => addScenario(`Escenario ${scenarios.length + 1}`));
   $('#clearScenariosButton').addEventListener('click', () => { scenarios=[];localStorage.removeItem('frigocalc_scenarios');renderScenarios();showToast('Escenarios eliminados.'); });
@@ -990,7 +1040,7 @@ function init() {
   populateProductSelect(); renderProductTable(); renderScenarios(); renderProjects(); initializeEvents(); showStep(1); updateLiveSummary();
   const saved = localStorage.getItem('frigocalc_last_result');
   if (saved) {
-    try { lastResult = JSON.parse(saved); renderResults(lastResult); renderOverview(lastResult); $('#resultsSection').classList.remove('hidden'); $('#liveCapacity').textContent=`${nf.format(lastResult.requiredCapacity)} kW`; } catch { /* ignore corrupt local data */ }
+    try { lastResult = JSON.parse(saved); lastResult.data = FrigoCalcEngine.migrateData ? FrigoCalcEngine.migrateData(lastResult.data || {}) : lastResult.data; renderResults(lastResult); renderOverview(lastResult); $('#resultsSection').classList.remove('hidden'); $('#liveCapacity').textContent=`${nf.format(lastResult.requiredCapacity)} kW`; } catch { /* ignore corrupt local data */ }
   }
   renderReport();
 }
