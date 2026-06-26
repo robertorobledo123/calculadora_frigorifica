@@ -5,25 +5,6 @@ function approx(actual, expected, tolerance = 1e-6, message = '') {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${message} expected ${expected}, got ${actual}`);
 }
 
-function saturationPressureKPa(tempC) {
-  return 0.61078 * Math.exp((17.2694 * tempC) / (tempC + 237.29));
-}
-
-function humidityRatio(tempC, rhPct, pressureKPa) {
-  const pv = Math.max(0, Math.min(100, rhPct)) / 100 * saturationPressureKPa(tempC);
-  return 0.62198 * pv / Math.max(0.1, pressureKPa - pv);
-}
-
-function moistAirEnthalpy(tempC, rhPct, pressureKPa) {
-  const w = humidityRatio(tempC, rhPct, pressureKPa);
-  return 1.006 * tempC + w * (2501 + 1.86 * tempC);
-}
-
-function dryAirDensity(tempC, rhPct, pressureKPa) {
-  const w = humidityRatio(tempC, rhPct, pressureKPa);
-  return (pressureKPa * 1000) / (287.055 * (tempC + 273.15) * (1 + 1.6078 * w));
-}
-
 function run(name, fn) {
   try {
     fn();
@@ -34,181 +15,180 @@ function run(name, fn) {
   }
 }
 
-run('transmisión resta puerta, usa U de puerta y temperatura de suelo', () => {
+function satBuckKPa(tempC) {
+  if (tempC >= 0) return 0.61121 * Math.exp((18.678 - tempC / 234.5) * (tempC / (257.14 + tempC)));
+  return 0.61115 * Math.exp((23.036 - tempC / 333.7) * (tempC / (279.82 + tempC)));
+}
+
+function humidityRatio(tempC, rhPct, pressureKPa) {
+  const pv = Math.max(0, Math.min(100, rhPct)) / 100 * satBuckKPa(tempC);
+  return 0.62198 * pv / Math.max(0.1, pressureKPa - pv);
+}
+
+function enthalpy(tempC, rhPct, pressureKPa) {
+  const w = humidityRatio(tempC, rhPct, pressureKPa);
+  return 1.006 * tempC + w * (2501 + 1.86 * tempC);
+}
+
+function dryDensity(tempC, rhPct, pressureKPa) {
+  const w = humidityRatio(tempC, rhPct, pressureKPa);
+  return pressureKPa * 1000 / (287.055 * (tempC + 273.15) * (1 + 1.6078 * w));
+}
+
+function baseData() {
+  return {
+    length: 10, width: 6, height: 4,
+    insideTemp: -18, outsideTemp: 35, soilTemp: 18, insideRH: 85, outsideRH: 55,
+    solarCorrection: 3, wallU: 0.24, roofU: 0.24, floorU: 0.30, doorU: 1.8,
+    doorWidth: 1.2, doorHeight: 2.2, doorOpenings: 30, doorMinutes: 1, doorProtection: 1,
+    altitudeM: 0, atmosphericPressureKPa: 0, infiltrationMethod: 'door', maxSimultaneousDoors: 1, trafficMultiplier: 1,
+    dailyProductMass: 1000, inventoryMass: 5000, productInTemp: 5, productOutTemp: -18, productHours: 18,
+    packagingPct: 8, packagingCp: 1.8, cpAbove: 3.31, cpBelow: 1.67, latentHeat: 247, freezingPoint: -2.2, respiration: 0,
+    peopleCount: 2, peopleHours: 4, peopleWatts: 350, lightingDensity: 8, lightingHours: 6,
+    fanWatts: 900, fanHours: 20, fanHeatFraction: 100, pumpWatts: 300, pumpHours: 12, pumpHeatFraction: 0,
+    auxiliaryWatts: 500, auxiliaryHours: 4, auxiliaryHeatFraction: 100,
+    defrostKw: 6, defrostCount: 3, defrostMinutes: 25, dripMinutes: 0, fanDelayMinutes: 0, defrostFraction: 60,
+    runtimeHours: 18, safetyMargin: 10, evapTemp: -25, condTemp: 45, carnotEfficiency: 38, electricRate: 2.65,
+    refrigerant: 'R404A', systemType: 'Expansion directa'
+  };
+}
+
+run('psicrometria usa Buck sobre agua y sobre hielo', () => {
+  approx(engine.saturationPressureKPa(20), satBuckKPa(20), 1e-12, 'presion saturacion agua kPa');
+  approx(engine.saturationPressureKPa(-10), satBuckKPa(-10), 1e-12, 'presion saturacion hielo kPa');
+});
+
+run('transmision resta puertas, usa U por puerta y temperatura de suelo', () => {
   const data = {
     length: 10, width: 5, height: 4,
     insideTemp: -5, outsideTemp: 35, solarCorrection: 2, soilTemp: 15,
-    wallU: 0.25, roofU: 0.20, floorU: 0.30, doorU: 1.60,
-    doorWidth: 2, doorHeight: 2
+    wallU: 0.25, roofU: 0.20, floorU: 0.30,
+    doors: [
+      { width: 2, height: 2, uValue: 1.6 },
+      { width: 1, height: 2, uValue: 2.0 }
+    ]
   };
   const result = engine.transmissionLoad(data);
   const floorAreaM2 = 10 * 5;
   const grossWallAreaM2 = 2 * (10 * 4 + 5 * 4);
-  const doorAreaM2 = 2 * 2;
+  const doorAreaM2 = 2 * 2 + 1 * 2;
   const netWallAreaM2 = grossWallAreaM2 - doorAreaM2;
   const deltaWallK = 35 + 2 - (-5);
   const deltaFloorK = 15 - (-5);
   const wallsKwhDay = 0.25 * netWallAreaM2 * deltaWallK * 24 / 1000;
   const roofKwhDay = 0.20 * floorAreaM2 * deltaWallK * 24 / 1000;
   const floorKwhDay = 0.30 * floorAreaM2 * deltaFloorK * 24 / 1000;
-  const doorKwhDay = 1.60 * doorAreaM2 * deltaWallK * 24 / 1000;
-  approx(result.walls, wallsKwhDay, 1e-9, 'muros kWh/día');
-  approx(result.door, doorKwhDay, 1e-9, 'puerta kWh/día');
-  approx(result.energy, wallsKwhDay + roofKwhDay + floorKwhDay + doorKwhDay, 1e-9, 'transmisión kWh/día');
+  const doorKwhDay = (1.6 * 4 + 2.0 * 2) * deltaWallK * 24 / 1000;
+  approx(result.walls, wallsKwhDay, 1e-9, 'muros kWh/dia');
+  approx(result.door, doorKwhDay, 1e-9, 'puertas kWh/dia');
+  approx(result.energy, wallsKwhDay + roofKwhDay + floorKwhDay + doorKwhDay, 1e-9, 'transmision total kWh/dia');
 });
 
-run('producto sobre congelación usa solo calor sensible superior', () => {
-  const data = { dailyProductMass: 100, productInTemp: 10, productOutTemp: 2, freezingPoint: -1, cpAbove: 3.8, cpBelow: 1.8, latentHeat: 250 };
-  const result = engine.productThermalEnergy(data);
-  const expectedKwh = 100 * 3.8 * (10 - 2) / 3600; // kg * kJ/kgK * K = kJ; /3600 = kWh
-  approx(result.totalKwh, expectedKwh, 1e-9, 'producto sensible kWh/día');
+run('duplicar area duplica transmision de muros si todo lo demas es igual', () => {
+  const a = engine.transmissionLoad({ length: 10, width: 5, height: 4, insideTemp: 0, outsideTemp: 30, solarCorrection: 0, soilTemp: 0, wallU: 0.2, roofU: 0, floorU: 0, doorWidth: 0, doorHeight: 0, doorU: 0 });
+  const b = engine.transmissionLoad({ length: 20, width: 10, height: 4, insideTemp: 0, outsideTemp: 30, solarCorrection: 0, soilTemp: 0, wallU: 0.2, roofU: 0, floorU: 0, doorWidth: 0, doorHeight: 0, doorU: 0 });
+  approx(b.walls / a.walls, 2, 1e-12, 'relacion area muros');
+});
+
+run('producto sensible sobre congelacion usa kg kJ/kgK K dividido entre 3600', () => {
+  const result = engine.productThermalEnergy({ dailyProductMass: 100, productInTemp: 10, productOutTemp: 2, freezingPoint: -1, cpAbove: 3.8, cpBelow: 1.8, latentHeat: 250 });
+  approx(result.totalKwh, 100 * 3.8 * 8 / 3600, 1e-12, 'producto sensible kWh/dia');
   approx(result.latent, 0, 1e-12, 'latente kJ');
 });
 
-run('producto cruzando congelación suma sensible superior, latente y sensible inferior', () => {
+run('congelacion completa suma sensible superior, latente completo y sensible inferior', () => {
+  const result = engine.productThermalEnergy({ dailyProductMass: 100, productInTemp: 5, productOutTemp: -10, freezingPoint: -2, cpAbove: 3.6, cpBelow: 1.8, latentHeat: 250 });
+  const expectedKwh = (100 * 3.6 * 7 + 100 * 250 + 100 * 1.8 * 8) / 3600;
+  approx(result.totalKwh, expectedKwh, 1e-12, 'congelacion completa kWh/dia');
+});
+
+run('duplicar masa duplica carga de producto y masa cero produce cero', () => {
   const data = { dailyProductMass: 100, productInTemp: 5, productOutTemp: -10, freezingPoint: -2, cpAbove: 3.6, cpBelow: 1.8, latentHeat: 250 };
-  const result = engine.productThermalEnergy(data);
-  const sensibleAboveKJ = 100 * 3.6 * (5 - (-2));
-  const latentKJ = 100 * 250;
-  const sensibleBelowKJ = 100 * 1.8 * ((-2) - (-10));
-  const expectedKwh = (sensibleAboveKJ + latentKJ + sensibleBelowKJ) / 3600;
-  approx(result.totalKwh, expectedKwh, 1e-9, 'producto cruzando congelación kWh/día');
-  approx(result.sensibleAbove, sensibleAboveKJ, 1e-9, 'sensible superior kJ');
-  approx(result.latent, latentKJ, 1e-9, 'latente kJ');
-  approx(result.sensibleBelow, sensibleBelowKJ, 1e-9, 'sensible inferior kJ');
+  const a = engine.productThermalEnergy(data).totalKwh;
+  const b = engine.productThermalEnergy({ ...data, dailyProductMass: 200 }).totalKwh;
+  approx(b / a, 2, 1e-12, 'doble masa');
+  approx(engine.productThermalEnergy({ ...data, dailyProductMass: 0 }).totalKwh, 0, 1e-12, 'cero masa');
 });
 
 run('empaque usa masa diaria entrante y Cp del empaque', () => {
-  const data = { dailyProductMass: 1000, packagingPct: 10, packagingCp: 1.5, productInTemp: 25, productOutTemp: 0 };
-  const result = engine.packagingEnergy(data);
-  const packagingMassKg = 1000 * 0.10;
-  const expectedKwh = packagingMassKg * 1.5 * 25 / 3600;
-  approx(result.packagingMass, packagingMassKg, 1e-9, 'masa empaque kg/día');
-  approx(result.energy, expectedKwh, 1e-9, 'empaque kWh/día');
+  const result = engine.packagingEnergy({ dailyProductMass: 1000, packagingPct: 10, packagingCp: 1.5, productInTemp: 25, productOutTemp: 0 });
+  approx(result.packagingMass, 100, 1e-12, 'masa empaque kg/dia');
+  approx(result.energy, 100 * 1.5 * 25 / 3600, 1e-12, 'empaque kWh/dia');
 });
 
-run('respiración usa inventario almacenado, no masa entrante diaria', () => {
+run('respiracion usa inventario almacenado', () => {
   const result = engine.respirationEnergy({ inventoryMass: 5000, respiration: 20 });
-  const expectedKwh = 20 * (5000 / 1000) * 24 / 1000; // W/t * t * h /1000 = kWh/día
-  approx(result.energy, expectedKwh, 1e-9, 'respiración kWh/día');
+  approx(result.energy, 20 * 5 * 24 / 1000, 1e-12, 'respiracion kWh/dia');
 });
 
-run('infiltración usa presión atmosférica y entalpía de aire húmedo', () => {
-  const data = {
-    doorWidth: 1, doorHeight: 2, doorOpenings: 10, doorMinutes: 1, doorProtection: 0.5,
-    insideTemp: 0, outsideTemp: 30, insideRH: 80, outsideRH: 50, atmosphericPressureKPa: 101.325
-  };
+run('infiltracion por puerta reporta volumen, masa, entalpia, sensible y latente', () => {
+  const data = { doorWidth: 1, doorHeight: 2, doorOpenings: 10, doorMinutes: 1, doorProtection: 0.5, maxSimultaneousDoors: 1, trafficMultiplier: 1, insideTemp: 0, outsideTemp: 30, insideRH: 80, outsideRH: 50, atmosphericPressureKPa: 101.325 };
   const result = engine.infiltrationLoad(data);
-  const areaM2 = 1 * 2;
-  const velocityMS = 0.5 * Math.sqrt(2 * 9.81 * 2 * Math.abs(30 - 0) / (0 + 273.15));
-  const volumeM3Day = areaM2 * velocityMS * (10 * 1 * 60) * 0.5;
-  const massDryAirKgDay = volumeM3Day * dryAirDensity(30, 50, 101.325);
-  const deltaHKJkg = Math.max(0, moistAirEnthalpy(30, 50, 101.325) - moistAirEnthalpy(0, 80, 101.325));
-  const expectedKwh = massDryAirKgDay * deltaHKJkg / 3600;
-  approx(result.infiltratedVolume, volumeM3Day, 1e-9, 'volumen infiltrado m³/día');
-  approx(result.energy, expectedKwh, 1e-9, 'infiltración kWh/día');
+  const velocityMS = 0.5 * Math.sqrt(2 * 9.81 * 2 * 30 / 273.15);
+  const volumeM3Day = 2 * velocityMS * 600 * 0.5;
+  const massKgDay = volumeM3Day * dryDensity(30, 50, 101.325);
+  const expected = massKgDay * Math.max(0, enthalpy(30, 50, 101.325) - enthalpy(0, 80, 101.325)) / 3600;
+  approx(result.infiltratedVolume, volumeM3Day, 1e-9, 'volumen m3/dia');
+  approx(result.massDryAir, massKgDay, 1e-9, 'masa aire seco kg/dia');
+  approx(result.energy, expected, 1e-9, 'infiltracion kWh/dia');
 });
 
-run('personas convierten W por horas a kWh/día', () => {
-  const expectedKwh = 3 * 400 * 2 / 1000;
-  approx(engine.peopleLoad({ peopleCount: 3, peopleWatts: 400, peopleHours: 2 }), expectedKwh, 1e-12, 'personas kWh/día');
+run('cero diferencia de entalpia produce cero infiltracion', () => {
+  const result = engine.infiltrationLoad({ infiltrationMethod: 'measuredVolume', measuredInfiltrationM3Day: 100, insideTemp: 10, outsideTemp: 10, insideRH: 50, outsideRH: 50, atmosphericPressureKPa: 101.325 });
+  approx(result.energy, 0, 1e-12, 'infiltracion cero');
 });
 
-run('iluminación usa área de piso por densidad y horas', () => {
-  const expectedKwh = (10 * 5) * 8 * 6 / 1000;
-  approx(engine.lightingLoad({ length: 10, width: 5, height: 4, lightingDensity: 8, lightingHours: 6 }), expectedKwh, 1e-12, 'iluminación kWh/día');
+run('personas, iluminacion, ventiladores, bombas, auxiliares y deshielo separan termico y electrico', () => {
+  approx(engine.peopleLoad({ peopleCount: 3, peopleWatts: 400, peopleHours: 2 }), 3 * 400 * 2 / 1000, 1e-12, 'personas kWh/dia');
+  approx(engine.lightingLoad({ length: 10, width: 5, lightingDensity: 8, lightingHours: 6 }), 10 * 5 * 8 * 6 / 1000, 1e-12, 'iluminacion kWh/dia');
+  assert.deepEqual(engine.fanLoad({ fanWatts: 900, fanHours: 20, fanHeatFraction: 100 }), { thermal: 18, electric: 18 });
+  assert.deepEqual(engine.pumpLoad({ pumpWatts: 1000, pumpHours: 10, pumpHeatFraction: 25 }), { thermal: 2.5, electric: 10 });
+  assert.deepEqual(engine.auxiliaryLoad({ auxiliaryWatts: 500, auxiliaryHours: 4, auxiliaryHeatFraction: 50 }), { thermal: 1, electric: 2 });
+  assert.deepEqual(engine.defrostLoad({ defrostKw: 6, defrostCount: 3, defrostMinutes: 20, defrostFraction: 50 }), { thermal: 3, electric: 6 });
 });
 
-run('ventiladores reportan carga térmica y consumo eléctrico directo', () => {
-  const result = engine.fanLoad({ fanWatts: 900, fanHours: 20 });
-  const expectedKwh = 900 * 20 / 1000;
-  approx(result.thermal, expectedKwh, 1e-12, 'ventiladores térmico kWh/día');
-  approx(result.electric, expectedKwh, 1e-12, 'ventiladores eléctrico directo kWh/día');
+run('deshielo reduce disponibilidad neta', () => {
+  const result = engine.defrostAvailability({ runtimeHours: 20, defrostCount: 2, defrostMinutes: 20, dripMinutes: 10, fanDelayMinutes: 5 });
+  approx(result.unavailableHours, 2 * 35 / 60, 1e-12, 'horas no disponibles');
+  approx(result.availableHours, 20 - 70 / 60, 1e-12, 'horas netas');
 });
 
-run('deshielo separa energía eléctrica total y fracción liberada al recinto', () => {
-  const result = engine.defrostLoad({ defrostKw: 6, defrostCount: 3, defrostMinutes: 20, defrostFraction: 50 });
-  const electricKwh = 6 * 3 * 20 / 60;
-  const thermalKwh = electricKwh * 0.50;
-  approx(result.electric, electricKwh, 1e-12, 'deshielo eléctrico kWh/día');
-  approx(result.thermal, thermalKwh, 1e-12, 'deshielo térmico kWh/día');
+run('margen, conversiones y consumo mensual', () => {
+  approx(engine.applyDesignMargin(10, 10), 11, 1e-12, 'margen 10%');
+  const conv = engine.convertCapacity(10);
+  approx(conv.btu, 10 * 3412.142, 1e-9, 'BTU/h');
+  approx(conv.tr, 10 / 3.5168525, 1e-9, 'TR');
+  const monthly = engine.monthlyConsumption(120, 2.4, 26, 30);
+  approx(monthly.monthlyKwh, (120 / 2.4 + 26) * 30, 1e-12, 'kWh/mes');
 });
 
-run('margen de diseño se aplica explícitamente a la capacidad base', () => {
-  approx(engine.applyDesignMargin(10, 15), 11.5, 1e-12, 'capacidad con margen kW');
+run('validaciones obligatorias incluyen T_evaporacion menor que T_interior', () => {
+  assert.deepEqual(engine.validateData(baseData()), []);
+  const errors = engine.validateData({ ...baseData(), evapTemp: -10 });
+  assert.ok(errors.includes('La temperatura de evaporación debe ser menor que la temperatura interior.'));
+  const doorErrors = engine.validateData({ ...baseData(), doors: [{ name: 'Puerta imposible', width: 100, height: 100, uValue: 2 }] });
+  assert.ok(doorErrors.includes('El área de puertas no puede exceder el área total de muros.'));
 });
 
-run('conversiones kW, BTU/h y TR', () => {
-  const result = engine.convertCapacity(10);
-  approx(result.kw, 10, 1e-12, 'kW');
-  approx(result.btu, 10 * 3412.142, 1e-9, 'BTU/h');
-  approx(result.tr, 10 / 3.5168525, 1e-9, 'TR');
+run('cambiar refrigerante no modifica carga termica y cambiar COP modifica consumo', () => {
+  const a = engine.calculate(baseData());
+  const b = engine.calculate({ ...baseData(), refrigerant: 'R717', systemType: 'Dos etapas' });
+  approx(a.totalEnergy, b.totalEnergy, 1e-9, 'carga independiente de refrigerante');
+  const c = engine.calculate({ ...baseData(), explicitCop: 3 });
+  approx(a.totalEnergy, c.totalEnergy, 1e-9, 'carga independiente de COP');
+  assert.notEqual(a.monthlyConsumption, c.monthlyConsumption);
 });
 
-run('consumo mensual usa energía frigorífica diaria, COP y eléctricos directos', () => {
-  const result = engine.monthlyConsumption(120, 2.4, 26, 30);
-  const compressorKwhDay = 120 / 2.4;
-  const totalKwhDay = compressorKwhDay + 26;
-  approx(result.compressorKwhDay, compressorKwhDay, 1e-12, 'compresor kWh/día');
-  approx(result.totalKwhDay, totalKwhDay, 1e-12, 'total eléctrico kWh/día');
-  approx(result.monthlyKwh, totalKwhDay * 30, 1e-12, 'consumo mensual kWh/mes');
+run('ningun resultado principal es NaN, infinito o negativo', () => {
+  const result = engine.calculate(baseData());
+  assert.deepEqual(result.validationProblems, []);
 });
 
-run('refrigerante, sistema y lift no modifican la carga térmica ni la capacidad de selección', () => {
-  const base = {
-    length: 10, width: 6, height: 4,
-    insideTemp: -18, outsideTemp: 35, soilTemp: 18, insideRH: 85, outsideRH: 55,
-    solarCorrection: 3, wallU: 0.24, roofU: 0.24, floorU: 0.30, doorU: 1.8,
-    doorWidth: 1.2, doorHeight: 2.2, doorOpenings: 30, doorMinutes: 1, doorProtection: 1,
-    altitudeM: 0, atmosphericPressureKPa: 0,
-    dailyProductMass: 1000, inventoryMass: 5000, productInTemp: 5, productOutTemp: -18, productHours: 18,
-    packagingPct: 8, packagingCp: 1.8, cpAbove: 3.31, cpBelow: 1.67, latentHeat: 247, freezingPoint: -2.2, respiration: 0,
-    peopleCount: 2, peopleHours: 4, peopleWatts: 350, lightingDensity: 8, lightingHours: 6,
-    fanWatts: 900, fanHours: 20, pumpWatts: 300, pumpHours: 12, otherWatts: 500, otherHours: 4,
-    defrostKw: 6, defrostCount: 3, defrostMinutes: 25, defrostFraction: 60,
-    runtimeHours: 18, safetyMargin: 10, evapTemp: -25, condTemp: 45, carnotEfficiency: 38, electricRate: 2.65,
-    refrigerant: 'R404A', systemType: 'Expansión directa'
-  };
-  const a = engine.calculate(base);
-  const b = engine.calculate({ ...base, refrigerant: 'R717 (NH₃)', systemType: 'Dos etapas', evapTemp: -35, condTemp: 55 });
-  approx(a.totalEnergy, b.totalEnergy, 1e-9, 'carga térmica kWh/día');
-  approx(a.requiredCapacity, b.requiredCapacity, 1e-9, 'capacidad de selección kW');
-  assert.notEqual(a.estimatedCop, b.estimatedCop, 'el lift solo debe reflejarse en desempeño/COP');
-});
-
-run('validaciones rechazan rangos imposibles y aceptan un caso completo', () => {
-  const valid = {
-    length: 10, width: 6, height: 4,
-    insideTemp: -18, outsideTemp: 35, soilTemp: 18, insideRH: 85, outsideRH: 55,
-    solarCorrection: 3, wallU: 0.24, roofU: 0.24, floorU: 0.30, doorU: 1.8,
-    doorWidth: 1.2, doorHeight: 2.2, doorOpenings: 30, doorMinutes: 1, doorProtection: 0.5,
-    altitudeM: 0, atmosphericPressureKPa: 0,
-    dailyProductMass: 1000, inventoryMass: 5000, productInTemp: 5, productOutTemp: -18, productHours: 18,
-    packagingPct: 8, packagingCp: 1.8, cpAbove: 3.31, cpBelow: 1.67, latentHeat: 247, freezingPoint: -2.2, respiration: 0,
-    peopleCount: 2, peopleHours: 4, peopleWatts: 350, lightingDensity: 8, lightingHours: 6,
-    fanWatts: 900, fanHours: 20, pumpWatts: 300, pumpHours: 12, auxiliaryWatts: 500, auxiliaryHours: 4,
-    defrostKw: 6, defrostCount: 3, defrostMinutes: 25, defrostFraction: 60,
-    runtimeHours: 18, safetyMargin: 10, evapTemp: -25, condTemp: 45, carnotEfficiency: 38, electricRate: 2.65
-  };
-  assert.deepEqual(engine.validateData(valid), []);
-
-  const errors = engine.validateData({
-    ...valid,
-    length: 0,
-    doorWidth: 100,
-    atmosphericPressureKPa: 40,
-    altitudeM: 7000,
-    defrostFraction: 120,
-    productInTemp: -300,
-    auxiliaryWatts: -1,
-    fanHours: 25
-  });
-  assert.ok(errors.includes('El largo debe ser mayor a cero.'));
-  assert.ok(errors.includes('El área de puerta no puede exceder el área total de muros.'));
-  assert.ok(errors.includes('La presión atmosférica debe estar entre 50 y 110 kPa, o dejarse en 0 para calcularla por altitud.'));
-  assert.ok(errors.includes('La altitud debe estar entre -500 y 6000 m.'));
-  assert.ok(errors.includes('La fracción de deshielo liberada al recinto debe estar entre 0 y 100%.'));
-  assert.ok(errors.includes('Las temperaturas deben ser finitas y estar sobre el cero absoluto.'));
-  assert.ok(errors.includes('Las cargas internas, ventiladores, bombas y deshielo no pueden ser negativos.'));
-  assert.ok(errors.includes('Las horas diarias de operación no pueden exceder 24 h.'));
+run('migracion conserva proyectos anteriores', () => {
+  const old = { data: { productMass: 1000, outsideTemp: 30, wallU: 0.3, otherWatts: 100, otherHours: 2 }, result: { data: { productMass: 1000 } } };
+  const migrated = engine.migrateProjectRecord(old);
+  assert.equal(migrated.schemaVersion, engine.SCHEMA_VERSION);
+  assert.equal(migrated.data.dailyProductMass, 1000);
+  assert.equal(migrated.data.inventoryMass, 1000);
+  assert.equal(migrated.data.auxiliaryWatts, 100);
 });

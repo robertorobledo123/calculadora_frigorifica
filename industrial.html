@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Calculadora frigorífica industrial avanzada Frigo Espacios" />
+  <title>Frigo Espacios Industrial</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root{--bg:#eef4f8;--surface:#fff;--surface-2:#f6f9fb;--text:#152536;--muted:#66798a;--border:#d7e2eb;--primary:#0783c5;--primary-2:#17a6c2;--danger:#bf3b45;--good:#16835f;--shadow:0 18px 40px rgba(17,36,52,.10)}
+    [data-theme="dark"]{--bg:#07131d;--surface:#102233;--surface-2:#0b1a28;--text:#edf6fb;--muted:#a6bbca;--border:#243d52;--primary:#16a7e6;--primary-2:#27c5d1;--shadow:0 20px 50px rgba(0,0,0,.32)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}.shell{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100vh}.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:22px;position:sticky;top:0;height:100vh}.brand{display:flex;gap:12px;align-items:center;margin-bottom:24px}.brand-mark{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--primary-2));display:grid;place-items:center;color:white;font-weight:900}.brand strong{display:block;font-size:18px}.brand small{color:var(--muted)}.nav{display:grid;gap:8px}.nav button,.nav a{border:0;background:transparent;color:var(--muted);text-align:left;padding:12px;border-radius:8px;text-decoration:none;font-weight:750}.nav button.active,.nav button:hover,.nav a:hover{background:rgba(7,131,197,.12);color:var(--primary)}.main{padding:22px 28px 40px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.topbar h1{margin:0;font-size:28px}.topbar p{margin:4px 0 0;color:var(--muted)}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer}.btn.primary{background:var(--primary);border-color:var(--primary);color:white}.btn.danger{color:var(--danger)}.grid{display:grid;gap:16px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.four{grid-template-columns:repeat(4,minmax(0,1fr))}.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:20px}.panel h2{margin:0 0 6px;font-size:19px}.panel p.hint,.help{margin:0 0 14px;color:var(--muted);font-size:13px}.section{display:none}.section.active{display:block}.form-grid{display:grid;gap:14px}.form-grid.two{grid-template-columns:repeat(2,1fr)}.form-grid.three{grid-template-columns:repeat(3,1fr)}.form-grid.four{grid-template-columns:repeat(4,1fr)}label{display:grid;gap:6px;font-size:12px;font-weight:800}input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);padding:10px 11px}textarea{min-height:76px}.field-error{color:var(--danger);font-size:12px;min-height:16px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}.metric{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px}.metric span{display:block;color:var(--muted);font-size:12px;font-weight:800}.metric strong{display:block;font-size:24px;margin-top:7px}.results{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.table{width:100%;border-collapse:collapse}.table th,.table td{border-bottom:1px solid var(--border);padding:10px;text-align:left;font-size:13px}.table th{color:var(--muted);font-size:11px;text-transform:uppercase}.warning{border-left:4px solid var(--primary);background:var(--surface-2);padding:10px;margin:8px 0;border-radius:0 8px 8px 0}.warning.danger{border-left-color:var(--danger)}.door-row{display:grid;grid-template-columns:1fr repeat(6,110px) 42px;gap:8px;align-items:end;margin-bottom:8px}.hidden{display:none!important}.footer-note{margin-top:18px;color:var(--muted);font-size:12px}.project-list{display:grid;gap:8px}.project-item{display:flex;justify-content:space-between;gap:12px;border:1px solid var(--border);border-radius:8px;padding:10px}.print-only{display:none}
+    @media(max-width:980px){.shell{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.results,.two,.three,.four,.summary,.form-grid.two,.form-grid.three,.form-grid.four{grid-template-columns:1fr}.main{padding:18px}.door-row{grid-template-columns:1fr}.topbar{display:block}.actions{margin-top:12px}}
+    @media print{.sidebar,.topbar .actions,.no-print{display:none}.shell{display:block}.main{padding:0}.panel{box-shadow:none;break-inside:avoid}.print-only{display:block}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">FE</div><div><strong>Frigo Espacios</strong><small>Industrial</small></div></div>
+      <nav class="nav" aria-label="Navegación principal">
+        <a href="index.html">Calculadora convencional</a>
+        <button class="active" data-page="calculator">Cálculo industrial</button>
+        <button data-page="projects">Proyectos</button>
+        <button data-page="method">Metodología y límites</button>
+      </nav>
+      <p class="footer-note">Cálculo preliminar. La selección final requiere software o información certificada del fabricante.</p>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div><h1>Calculadora frigorífica industrial</h1><p>Blast freezer, IQF, sistemas secundarios, R717 bombeado, CO₂ transcrítico y dos etapas.</p></div>
+        <div class="actions no-print">
+          <button class="btn" id="themeButton" type="button">Modo oscuro</button>
+          <button class="btn" id="saveButton" type="button">Guardar</button>
+          <button class="btn" id="exportButton" type="button">Exportar JSON</button>
+          <button class="btn" id="printButton" type="button">Imprimir</button>
+          <button class="btn primary" id="calculateButton" type="button">Calcular</button>
+        </div>
+      </header>
+
+      <section class="page" id="calculatorPage">
+        <form id="industrialForm" class="grid" novalidate>
+          <section class="panel">
+            <h2>Escenario y producto</h2>
+            <p class="hint">Los datos sin fuente se tratan como preliminares y se reportan como advertencia.</p>
+            <div class="form-grid four">
+              <label for="projectName">Proyecto<input id="projectName" value="Escenario industrial" /></label>
+              <label for="scenario">Tipo de escenario<select id="scenario"><option value="blast">Blast freezer por lotes</option><option value="iqf">IQF continuo</option><option value="secondary">Glicol o salmuera</option><option value="ammonia">Amoníaco bombeado R717</option><option value="co2">CO₂ transcrítico</option><option value="two-stage">Sistema de dos etapas</option></select></label>
+              <label for="initialTemp">Temperatura inicial <span class="help">°C</span><input id="initialTemp" type="number" value="5" step="0.1" /></label>
+              <label for="finalTemp">Temperatura final <span class="help">°C</span><input id="finalTemp" type="number" value="-18" step="0.1" /></label>
+              <label for="initialFreezingPoint">Punto inicial de congelación <span class="help">°C</span><input id="initialFreezingPoint" type="number" value="-1.8" step="0.1" /></label>
+              <label for="initialFrozenFraction">Fracción congelada inicial <span class="help">%</span><input id="initialFrozenFraction" type="number" min="0" max="100" value="0" /></label>
+              <label for="finalFrozenFraction">Fracción congelada final <span class="help">%</span><input id="finalFrozenFraction" type="number" min="0" max="100" value="100" /></label>
+              <label for="cpAbove">Cp superior <span class="help">kJ/kgK</span><input id="cpAbove" type="number" min="0" value="3.6" step="0.01" /></label>
+              <label for="cpBelow">Cp inferior <span class="help">kJ/kgK</span><input id="cpBelow" type="number" min="0" value="1.8" step="0.01" /></label>
+              <label for="latentHeat">Latente efectivo <span class="help">kJ/kg</span><input id="latentHeat" type="number" min="0" value="250" step="1" /></label>
+              <label for="packagingPct">Empaque <span class="help">%</span><input id="packagingPct" type="number" min="0" max="100" value="8" /></label>
+              <label for="packagingCp">Cp empaque <span class="help">kJ/kgK</span><input id="packagingCp" type="number" min="0" value="1.6" step="0.1" /></label>
+            </div>
+          </section>
+
+          <section class="panel scenario-section active" data-section="blast">
+            <h2>Blast freezer por lotes</h2>
+            <div class="form-grid four">
+              <label for="batchMassKg">Masa por lote <span class="help">kg</span><input id="batchMassKg" type="number" min="0" value="1200" /></label>
+              <label for="batchesPerDay">Lotes diarios<input id="batchesPerDay" type="number" min="0" value="3" /></label>
+              <label for="pullDownHours">Abatimiento por lote <span class="help">h</span><input id="pullDownHours" type="number" min="0.01" value="4" step="0.25" /></label>
+              <label for="loadingHours">Carga y descarga <span class="help">h</span><input id="loadingHours" type="number" min="0" value="0.5" step="0.25" /></label>
+              <label for="recoveryHours">Recuperación entre lotes <span class="help">h</span><input id="recoveryHours" type="number" min="0" value="0.25" step="0.25" /></label>
+              <label for="fanKw">Ventiladores <span class="help">kW</span><input id="fanKw" type="number" min="0" value="12" step="0.1" /></label>
+              <label for="processAuxKw">Carros/bandas/auxiliares <span class="help">kW</span><input id="processAuxKw" type="number" min="0" value="2" step="0.1" /></label>
+              <label for="processAuxHeatFraction">Fracción al recinto <span class="help">%</span><input id="processAuxHeatFraction" type="number" min="0" max="100" value="100" /></label>
+            </div>
+          </section>
+
+          <section class="panel scenario-section" data-section="iqf">
+            <h2>IQF continuo</h2>
+            <div class="form-grid four">
+              <label for="flowKgH">Flujo producto <span class="help">kg/h</span><input id="flowKgH" type="number" min="0" value="1500" /></label>
+              <label for="operationHours">Operación diaria <span class="help">h</span><input id="operationHours" type="number" min="0" max="24" value="16" /></label>
+              <label for="beltKw">Motor banda <span class="help">kW</span><input id="beltKw" type="number" min="0" value="3" /></label>
+              <label for="beltHeatFraction">Banda al lado frío <span class="help">%</span><input id="beltHeatFraction" type="number" min="0" max="100" value="100" /></label>
+              <label for="vibratorKw">Vibradores <span class="help">kW</span><input id="vibratorKw" type="number" min="0" value="1.5" /></label>
+              <label for="auxiliaryKw">Bombas/auxiliares <span class="help">kW</span><input id="auxiliaryKw" type="number" min="0" value="2" /></label>
+              <label for="glazingWaterKgH">Agua glaseado <span class="help">kg/h</span><input id="glazingWaterKgH" type="number" min="0" value="0" /></label>
+              <label for="glazingWaterTempC">Temp. agua <span class="help">°C</span><input id="glazingWaterTempC" type="number" value="5" /></label>
+              <label for="glazingFrozenPct">Agua que congela <span class="help">%</span><input id="glazingFrozenPct" type="number" min="0" max="100" value="100" /></label>
+            </div>
+          </section>
+
+          <section class="panel scenario-section" data-section="secondary">
+            <h2>Sistema secundario: glicol o salmuera</h2>
+            <div class="form-grid four">
+              <label for="flowM3H">Flujo <span class="help">m³/h</span><input id="flowM3H" type="number" min="0" value="20" /></label>
+              <label for="pressureDropKPa">Caída presión <span class="help">kPa</span><input id="pressureDropKPa" type="number" min="0" value="120" /></label>
+              <label for="pumpEfficiencyPct">Eficiencia bomba <span class="help">%</span><input id="pumpEfficiencyPct" type="number" min="1" max="100" value="60" /></label>
+              <label for="motorEfficiencyPct">Eficiencia motor <span class="help">%</span><input id="motorEfficiencyPct" type="number" min="1" max="100" value="90" /></label>
+              <label for="heatToColdPct">Potencia al circuito frío <span class="help">%</span><input id="heatToColdPct" type="number" min="0" max="100" value="80" /></label>
+              <label for="densityKgM3">Densidad <span class="help">kg/m³</span><input id="densityKgM3" type="number" min="0" value="1040" /></label>
+              <label for="cpKjKgK">Cp fluido <span class="help">kJ/kgK</span><input id="cpKjKgK" type="number" min="0" value="3.6" step="0.01" /></label>
+              <label for="supplyTempC">Suministro <span class="help">°C</span><input id="supplyTempC" type="number" value="-8" /></label>
+              <label for="returnTempC">Retorno <span class="help">°C</span><input id="returnTempC" type="number" value="-4" /></label>
+              <label for="requiredCapacityKw">Capacidad requerida <span class="help">kW</span><input id="requiredCapacityKw" type="number" min="0" value="120" /></label>
+              <label for="pipeGainKw">Ganancia tuberías <span class="help">kW</span><input id="pipeGainKw" type="number" min="0" value="1" /></label>
+              <label for="tankGainKw">Ganancia tanque <span class="help">kW</span><input id="tankGainKw" type="number" min="0" value="0.5" /></label>
+            </div>
+          </section>
+
+          <section class="panel scenario-section" data-section="ammonia">
+            <h2>Amoníaco bombeado R717</h2>
+            <div class="form-grid four">
+              <label for="evaporatorCapacityKw">Capacidad evaporador <span class="help">kW</span><input id="evaporatorCapacityKw" type="number" min="0" value="120" /></label>
+              <label for="refrigerationEffectKjKg">Efecto frigorífico <span class="help">kJ/kg</span><input id="refrigerationEffectKjKg" type="number" min="0" value="1100" /></label>
+              <label for="recirculationRatio">Relación recirculación<input id="recirculationRatio" type="number" min="0" value="4" /></label>
+              <label for="liquidDensityKgM3">Densidad líquido <span class="help">kg/m³</span><input id="liquidDensityKgM3" type="number" min="0" value="640" /></label>
+              <label for="selectedPumpFlowM3H">Flujo bomba seleccionado <span class="help">m³/h</span><input id="selectedPumpFlowM3H" type="number" min="0" value="3" /></label>
+              <label for="heatToRefrigerantPct">Calor bomba al refrigerante <span class="help">%</span><input id="heatToRefrigerantPct" type="number" min="0" max="100" value="80" /></label>
+              <label for="evaporatorCount">Número evaporadores<input id="evaporatorCount" type="number" min="1" value="1" /></label>
+              <label for="simultaneityPct">Simultaneidad <span class="help">%</span><input id="simultaneityPct" type="number" min="0" max="100" value="100" /></label>
+            </div>
+          </section>
+
+          <section class="panel scenario-section" data-section="co2">
+            <h2>CO₂ transcrítico</h2>
+            <p class="hint">No se calcula una condensación ficticia. Usa COP certificado, potencia/capacidad, efecto/trabajo específico o tabla del usuario.</p>
+            <div class="form-grid four">
+              <label for="performanceMethod">Método desempeño<select id="performanceMethod"><option value="manufacturerCop">COP fabricante</option><option value="nominalCapacityPower">Capacidad / potencia nominal</option><option value="specificEnthalpy">Efecto / trabajo específico</option><option value="performanceTable">Tabla importada</option><option value="carnot">Carnot no permitido</option></select></label>
+              <label for="certifiedCop">COP certificado<input id="certifiedCop" type="number" min="0" value="1.6" step="0.01" /></label>
+              <label for="nominalCapacityKw">Capacidad nominal <span class="help">kW</span><input id="nominalCapacityKw" type="number" min="0" value="100" /></label>
+              <label for="nominalPowerKw">Potencia absorbida <span class="help">kW</span><input id="nominalPowerKw" type="number" min="0" value="62.5" /></label>
+              <label for="specificWorkKjKg">Trabajo específico <span class="help">kJ/kg</span><input id="specificWorkKjKg" type="number" min="0" value="80" /></label>
+              <label for="highPressureBar">Presión alta <span class="help">bar</span><input id="highPressureBar" type="number" min="0" value="90" /></label>
+              <label for="gasCoolerOutletTempC">Salida gas cooler <span class="help">°C</span><input id="gasCoolerOutletTempC" type="number" value="35" /></label>
+              <label for="evaporatingTempC">Evaporación <span class="help">°C</span><input id="evaporatingTempC" type="number" value="-35" /></label>
+              <label for="superheatK">Sobrecalentamiento <span class="help">K</span><input id="superheatK" type="number" min="0" value="8" /></label>
+              <label for="tableCapacityKw">Tabla capacidad <span class="help">kW</span><input id="tableCapacityKw" type="number" min="0" value="100" /></label>
+              <label for="tablePowerKw">Tabla potencia <span class="help">kW</span><input id="tablePowerKw" type="number" min="0" value="60" /></label>
+              <label for="dataSource">Fuente del dato<input id="dataSource" value="Dato de catálogo ingresado por usuario" /></label>
+            </div>
+            <label for="catalogConditions">Condiciones del punto de catálogo<textarea id="catalogConditions">Presión alta, salida de gas cooler, evaporación y sobrecalentamiento deben coincidir con el catálogo.</textarea></label>
+          </section>
+
+          <section class="panel scenario-section" data-section="two-stage">
+            <h2>Sistema de dos etapas</h2>
+            <div class="form-grid four">
+              <label for="intermediateTempC">Temp. intermedia <span class="help">°C</span><input id="intermediateTempC" type="number" value="-10" /></label>
+              <label for="lowStagePowerKw">Potencia etapa baja <span class="help">kW</span><input id="lowStagePowerKw" type="number" min="0" value="0" /></label>
+              <label for="highStagePowerKw">Potencia etapa alta <span class="help">kW</span><input id="highStagePowerKw" type="number" min="0" value="0" /></label>
+              <label for="totalCapacityKw">Capacidad catálogo <span class="help">kW</span><input id="totalCapacityKw" type="number" min="0" value="0" /></label>
+              <label for="intercooling"><input id="intercooling" type="checkbox" /> Interenfriamiento</label>
+              <label for="economizer"><input id="economizer" type="checkbox" /> Economizador o inyección</label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Disponibilidad, deshielo, infiltración y desempeño</h2>
+            <div class="form-grid four">
+              <label for="availableHours">Horas disponibles <span class="help">h/día</span><input id="availableHours" type="number" min="0" max="24" value="20" /></label>
+              <label for="designMarginPct">Margen diseño <span class="help">%</span><input id="designMarginPct" type="number" min="0" max="100" value="10" /></label>
+              <label for="fanHeatFraction">Ventiladores al lado frío <span class="help">%</span><input id="fanHeatFraction" type="number" min="0" max="100" value="100" /></label>
+              <label for="additionalLossesKw">Pérdidas adicionales <span class="help">kW</span><input id="additionalLossesKw" type="number" min="0" value="1" /></label>
+              <label for="defrostKw">Deshielo eléctrico <span class="help">kW</span><input id="defrostKw" type="number" min="0" value="8" /></label>
+              <label for="defrostCount">Deshielos/día<input id="defrostCount" type="number" min="0" value="2" /></label>
+              <label for="defrostMinutes">Minutos deshielo<input id="defrostMinutes" type="number" min="0" value="25" /></label>
+              <label for="dripMinutes">Goteo <span class="help">min</span><input id="dripMinutes" type="number" min="0" value="10" /></label>
+              <label for="fanDelayMinutes">Retardo ventilador <span class="help">min</span><input id="fanDelayMinutes" type="number" min="0" value="5" /></label>
+              <label for="defrostHeatFraction">Deshielo al recinto <span class="help">%</span><input id="defrostHeatFraction" type="number" min="0" max="100" value="60" /></label>
+              <label for="recoveryLoadKw">Carga recuperación <span class="help">kW</span><input id="recoveryLoadKw" type="number" min="0" value="0" /></label>
+              <label for="cop">COP para rechazo estimado<input id="cop" type="number" min="0" value="1.6" step="0.01" /></label>
+            </div>
+            <hr />
+            <div class="form-grid four">
+              <label for="infiltrationMethod">Método infiltración<select id="infiltrationMethod"><option value="door">Puerta y flotación</option><option value="airChanges">Renovaciones por día</option><option value="measuredVolume">Volumen medido</option></select></label>
+              <label for="insideTemp">Temp. interior <span class="help">°C</span><input id="insideTemp" type="number" value="-18" /></label>
+              <label for="outsideTemp">Temp. exterior <span class="help">°C</span><input id="outsideTemp" type="number" value="32" /></label>
+              <label for="insideRH">HR interior <span class="help">%</span><input id="insideRH" type="number" min="0" max="100" value="85" /></label>
+              <label for="outsideRH">HR exterior <span class="help">%</span><input id="outsideRH" type="number" min="0" max="100" value="60" /></label>
+              <label for="altitudeM">Altitud <span class="help">m</span><input id="altitudeM" type="number" value="0" /></label>
+              <label for="atmosphericPressureKPa">Presión directa <span class="help">kPa</span><input id="atmosphericPressureKPa" type="number" min="0" value="0" /></label>
+              <label for="trafficMultiplier">Multiplicador tráfico<input id="trafficMultiplier" type="number" min="0" value="1" step="0.1" /></label>
+              <label for="trafficType">Tipo tráfico<select id="trafficType"><option>personas</option><option>carros</option><option>montacargas</option></select></label>
+              <label for="maxSimultaneousDoors">Puertas simultáneas<input id="maxSimultaneousDoors" type="number" min="1" value="1" /></label>
+              <label for="airChangesPerDay">Renovaciones/día<input id="airChangesPerDay" type="number" min="0" value="1" /></label>
+              <label for="measuredInfiltrationM3Day">Volumen medido <span class="help">m³/día</span><input id="measuredInfiltrationM3Day" type="number" min="0" value="500" /></label>
+              <label for="length">Largo recinto <span class="help">m</span><input id="length" type="number" min="0" value="20" /></label>
+              <label for="width">Ancho recinto <span class="help">m</span><input id="width" type="number" min="0" value="8" /></label>
+              <label for="height">Altura recinto <span class="help">m</span><input id="height" type="number" min="0" value="5" /></label>
+            </div>
+            <div style="margin-top:14px">
+              <h3>Puertas editables</h3>
+              <div id="doors"></div>
+              <button class="btn" type="button" id="addDoorButton">Agregar puerta</button>
+              <p class="help">Los factores de protección son estimados configurables, no valores universales.</p>
+            </div>
+          </section>
+        </form>
+
+        <section id="errorSummary" class="warning danger hidden" role="alert"></section>
+        <section class="summary" id="summaryCards"></section>
+        <section class="results">
+          <article class="panel"><h2>Resultados</h2><div id="resultBody" class="help">Ejecuta un cálculo para ver resultados.</div></article>
+          <aside class="panel"><h2>Advertencias y supuestos</h2><div id="warningBody" class="help">La selección final requiere validación con fabricante.</div></aside>
+        </section>
+      </section>
+
+      <section class="page hidden" id="projectsPage">
+        <div class="panel">
+          <h2>Proyectos industriales guardados</h2>
+          <div class="actions no-print"><input id="importFile" type="file" accept="application/json" class="hidden" /><button class="btn" id="importButton" type="button">Importar JSON</button><button class="btn" id="duplicateButton" type="button">Duplicar actual</button></div>
+          <div id="projectList" class="project-list"></div>
+        </div>
+      </section>
+
+      <section class="page hidden" id="methodPage">
+        <article class="panel">
+          <h2>Metodología y límites</h2>
+          <p>Los módulos calculan energía térmica diaria, capacidad promedio, capacidad máxima de proceso, consumo eléctrico directo y desempeño a partir de datos ingresados. No se inventan COP ni capacidades de compresores.</p>
+          <p>CO₂ transcrítico requiere COP certificado, capacidad/potencia, efecto/trabajo específico o una tabla de desempeño del usuario. No se usa una temperatura de condensación ficticia.</p>
+          <p>R717 bombeado y glicol/salmuera son cálculos preliminares; no sustituyen diseño de tuberías, recipientes, válvulas, seguridad ni selección certificada.</p>
+          <p>Más detalle en <a href="docs/METODOLOGIA.md">docs/METODOLOGIA.md</a> y <a href="docs/LIMITACIONES.md">docs/LIMITACIONES.md</a>.</p>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="calc-engine.js"></script>
+  <script src="industrial-engine.js"></script>
+  <script>
+'use strict';
+const $ = (selector, root=document) => root.querySelector(selector);
+const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
+const nf = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 2 });
+const money = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' });
+let lastResult = null;
+let doors = [{ name:'Puerta 1', width:1.2, height:2.4, uValue:1.8, openingsPerDay:30, minutesOpen:1, protectionFactor:0.72 }];
+
+function num(id){ const el = $(`#${id}`); const value = parseFloat(el?.value); return Number.isFinite(value) ? value : 0; }
+function val(id){ return $(`#${id}`)?.value || ''; }
+function checked(id){ return Boolean($(`#${id}`)?.checked); }
+function field(name, value, unit=''){ return `<tr><td>${name}</td><td><strong>${value}</strong> ${unit}</td></tr>`; }
+function card(label, value, unit=''){ return `<div class="metric"><span>${label}</span><strong>${value}</strong><small>${unit}</small></div>`; }
+
+function renderDoors(){
+  $('#doors').innerHTML = doors.map((door,index) => `
+    <div class="door-row" data-door="${index}">
+      <label>Nombre<input data-door-field="name" value="${door.name || `Puerta ${index+1}`}" /></label>
+      <label>Ancho m<input data-door-field="width" type="number" min="0" value="${door.width}" /></label>
+      <label>Alto m<input data-door-field="height" type="number" min="0" value="${door.height}" /></label>
+      <label>U W/m²K<input data-door-field="uValue" type="number" min="0" value="${door.uValue}" /></label>
+      <label>Aperturas<input data-door-field="openingsPerDay" type="number" min="0" value="${door.openingsPerDay}" /></label>
+      <label>Min/apertura<input data-door-field="minutesOpen" type="number" min="0" value="${door.minutesOpen}" /></label>
+      <label>Protección<input data-door-field="protectionFactor" type="number" min="0" max="1" step="0.01" value="${door.protectionFactor}" /></label>
+      <button class="btn danger" type="button" data-remove-door="${index}" title="Eliminar">×</button>
+    </div>`).join('');
+  $$('[data-door-field]').forEach(input => input.addEventListener('input', syncDoors));
+  $$('[data-remove-door]').forEach(btn => btn.addEventListener('click', () => { doors.splice(Number(btn.dataset.removeDoor),1); if(!doors.length) doors.push({name:'Puerta 1',width:1,height:2,uValue:1.8,openingsPerDay:0,minutesOpen:0,protectionFactor:1}); renderDoors(); }));
+}
+
+function syncDoors(){
+  doors = $$('#doors [data-door]').map(row => {
+    const get = field => row.querySelector(`[data-door-field="${field}"]`).value;
+    return { name:get('name'), width:Number(get('width')), height:Number(get('height')), uValue:Number(get('uValue')), openingsPerDay:Number(get('openingsPerDay')), minutesOpen:Number(get('minutesOpen')), protectionFactor:Number(get('protectionFactor')) };
+  });
+}
+
+function collectData(){
+  syncDoors();
+  return {
+    schemaVersion: 2,
+    projectName: val('projectName'),
+    scenario: val('scenario'),
+    initialTemp:num('initialTemp'), finalTemp:num('finalTemp'), initialFreezingPoint:num('initialFreezingPoint'),
+    initialFrozenFraction:num('initialFrozenFraction'), finalFrozenFraction:num('finalFrozenFraction'),
+    cpAbove:num('cpAbove'), cpBelow:num('cpBelow'), latentHeat:num('latentHeat'), packagingPct:num('packagingPct'), packagingCp:num('packagingCp'),
+    batchMassKg:num('batchMassKg'), batchesPerDay:num('batchesPerDay'), pullDownHours:num('pullDownHours'), loadingHours:num('loadingHours'), recoveryHours:num('recoveryHours'),
+    fanKw:num('fanKw'), fanHeatFraction:num('fanHeatFraction'), processAuxKw:num('processAuxKw'), processAuxHeatFraction:num('processAuxHeatFraction'),
+    flowKgH:num('flowKgH'), operationHours:num('operationHours'), beltKw:num('beltKw'), beltHeatFraction:num('beltHeatFraction'), vibratorKw:num('vibratorKw'), vibratorHeatFraction:num('vibratorHeatFraction'), auxiliaryKw:num('auxiliaryKw'), auxiliaryHeatFraction:num('auxiliaryHeatFraction'),
+    glazingWaterKgH:num('glazingWaterKgH'), glazingWaterTempC:num('glazingWaterTempC'), glazingFrozenPct:num('glazingFrozenPct'),
+    flowM3H:num('flowM3H'), pressureDropKPa:num('pressureDropKPa'), pumpEfficiencyPct:num('pumpEfficiencyPct'), motorEfficiencyPct:num('motorEfficiencyPct'), heatToColdPct:num('heatToColdPct'), densityKgM3:num('densityKgM3'), cpKjKgK:num('cpKjKgK'), supplyTempC:num('supplyTempC'), returnTempC:num('returnTempC'), requiredCapacityKw:num('requiredCapacityKw'), pipeGainKw:num('pipeGainKw'), tankGainKw:num('tankGainKw'),
+    evaporatorCapacityKw:num('evaporatorCapacityKw'), refrigerationEffectKjKg:num('refrigerationEffectKjKg'), recirculationRatio:num('recirculationRatio'), liquidDensityKgM3:num('liquidDensityKgM3'), selectedPumpFlowM3H:num('selectedPumpFlowM3H'), heatToRefrigerantPct:num('heatToRefrigerantPct'), evaporatorCount:num('evaporatorCount'), simultaneityPct:num('simultaneityPct'),
+    performanceMethod:val('performanceMethod'), certifiedCop:num('certifiedCop'), nominalCapacityKw:num('nominalCapacityKw'), nominalPowerKw:num('nominalPowerKw'), specificWorkKjKg:num('specificWorkKjKg'), highPressureBar:num('highPressureBar'), gasCoolerOutletTempC:num('gasCoolerOutletTempC'), evaporatingTempC:num('evaporatingTempC'), superheatK:num('superheatK'), tableCapacityKw:num('tableCapacityKw'), tablePowerKw:num('tablePowerKw'), dataSource:val('dataSource'), catalogConditions:val('catalogConditions'),
+    intermediateTempC:num('intermediateTempC'), lowStagePowerKw:num('lowStagePowerKw'), highStagePowerKw:num('highStagePowerKw'), totalCapacityKw:num('totalCapacityKw'), intercooling:checked('intercooling'), economizer:checked('economizer'),
+    availableHours:num('availableHours'), designMarginPct:num('designMarginPct'), additionalLossesKw:num('additionalLossesKw'), defrostKw:num('defrostKw'), defrostCount:num('defrostCount'), defrostMinutes:num('defrostMinutes'), dripMinutes:num('dripMinutes'), fanDelayMinutes:num('fanDelayMinutes'), defrostHeatFraction:num('defrostHeatFraction'), recoveryLoadKw:num('recoveryLoadKw'), cop:num('cop'),
+    infiltrationMethod:val('infiltrationMethod'), insideTemp:num('insideTemp'), outsideTemp:num('outsideTemp'), insideRH:num('insideRH'), outsideRH:num('outsideRH'), altitudeM:num('altitudeM'), atmosphericPressureKPa:num('atmosphericPressureKPa'), trafficMultiplier:num('trafficMultiplier'), trafficType:val('trafficType'), maxSimultaneousDoors:num('maxSimultaneousDoors'), airChangesPerDay:num('airChangesPerDay'), measuredInfiltrationM3Day:num('measuredInfiltrationM3Day'), length:num('length'), width:num('width'), height:num('height'), doors
+  };
+}
+
+function renderScenario(){
+  const scenario = val('scenario');
+  $$('.scenario-section').forEach(section => section.classList.toggle('active', section.dataset.section === scenario));
+}
+
+function renderResult(result, infiltration){
+  const cap = result.selectionCapacityKw ?? result.requiredCapacityKw ?? result.performance?.compressorKw ?? result.transportedCapacityKw ?? 0;
+  const thermal = result.thermalEnergyDailyKwh ?? 0;
+  const process = result.processCapacityKw ?? result.baseCapacityKw ?? result.transportedCapacityKw ?? result.performance?.cop ?? 0;
+  const electric = result.directElectricKwhDay ?? result.pumpEnergyKwhDay ?? result.performance?.compressorKwhDay ?? 0;
+  $('#summaryCards').innerHTML = [
+    card('Capacidad selección', nf.format(cap), 'kW'),
+    card('Energía térmica diaria', nf.format(thermal), 'kWh/día'),
+    card('Proceso / transporte', nf.format(process), result.scenario === 'secondary' ? 'kW transportados' : 'kW'),
+    card('Eléctrico directo', nf.format(electric), 'kWh/día')
+  ].join('');
+  const rows = [];
+  if(result.scenario === 'blast'){
+    rows.push(field('Energía por lote', nf.format(result.energyPerBatchKwh), 'kWh/lote'), field('Capacidad durante abatimiento', nf.format(result.processCapacityKw), 'kW'), field('Lotes máximos por día', result.maxBatchesPerDay, 'lotes'));
+  } else if(result.scenario === 'iqf'){
+    rows.push(field('Producto', nf.format(result.productKw), 'kW'), field('Glaseado', nf.format(result.glazing.totalKw), 'kW'), field('Rechazo estimado', result.rejectionHeatKw == null ? 'Requiere COP' : nf.format(result.rejectionHeatKw), 'kW'));
+  } else if(result.scenario === 'secondary'){
+    rows.push(field('Potencia hidráulica', nf.format(result.hydraulicKw), 'kW'), field('Potencia eléctrica bomba', nf.format(result.electricKw), 'kW'), field('Capacidad transportada', nf.format(result.transportedCapacityKw), 'kW'), field('Déficit', nf.format(result.deficitKw), 'kW'));
+  } else if(result.scenario === 'ammonia'){
+    rows.push(field('Flujo vapor', nf.format(result.vaporMassFlowKgS), 'kg/s'), field('Flujo líquido requerido', nf.format(result.requiredFlowM3H), 'm³/h'), field('Flujo seleccionado/requerido', nf.format(result.selectedToRequiredRatio), ''));
+  } else if(result.scenario === 'co2'){
+    rows.push(field('COP usado', nf.format(result.performance.cop), ''), field('Compresor', nf.format(result.performance.compressorKw), 'kW'), field('Rechazo de calor', nf.format(result.performance.rejectionHeatKw), 'kW'), field('Fuente', result.performance.source, ''));
+  } else {
+    rows.push(field('COP usado', nf.format(result.cop), ''), field('Compresor', nf.format(result.compressorKw), 'kW'), field('Rechazo de calor', nf.format(result.rejectionHeatKw), 'kW'));
+  }
+  rows.push(field('Infiltración volumen', nf.format(infiltration.infiltratedVolume), 'm³/día'), field('Infiltración masa aire seco', nf.format(infiltration.massDryAir), 'kg/día'), field('Infiltración entalpía', nf.format(infiltration.enthalpyDifference), 'kJ/kg'), field('Infiltración total', nf.format(infiltration.energy), 'kWh/día'));
+  $('#resultBody').innerHTML = `<table class="table"><tbody>${rows.join('')}</tbody></table>`;
+  const warnings = [...(result.warnings || [])];
+  warnings.push('Datos de productos existentes sin fuente verificada deben considerarse preliminares.');
+  warnings.push('Selección final sujeta a software o información certificada del fabricante.');
+  $('#warningBody').innerHTML = warnings.map(w => `<div class="warning">${w}</div>`).join('');
+}
+
+function calculate(){
+  const data = collectData();
+  const errors = FrigoIndustrialEngine.validateIndustrial(data);
+  const infiltration = FrigoCalcEngine.infiltrationLoad(data);
+  if(errors.length){
+    $('#errorSummary').classList.remove('hidden');
+    $('#errorSummary').innerHTML = `<strong>Revisa los datos:</strong><br>${errors.join('<br>')}`;
+  } else {
+    $('#errorSummary').classList.add('hidden');
+  }
+  const result = FrigoIndustrialEngine.calculateIndustrial(data);
+  lastResult = { schemaVersion:2, data, result, infiltration, savedAt:new Date().toISOString() };
+  localStorage.setItem('frigocalc_industrial_last_result', JSON.stringify(lastResult));
+  renderResult(result, infiltration);
+}
+
+function saveProject(duplicate=false){
+  if(!lastResult) calculate();
+  const projects = JSON.parse(localStorage.getItem('frigocalc_industrial_projects') || '[]');
+  const record = { ...lastResult, id:crypto.randomUUID(), savedAt:new Date().toISOString(), name: duplicate ? `${lastResult.data.projectName} copia` : lastResult.data.projectName };
+  projects.unshift(record);
+  localStorage.setItem('frigocalc_industrial_projects', JSON.stringify(projects));
+  renderProjects();
+}
+
+function renderProjects(){
+  const projects = JSON.parse(localStorage.getItem('frigocalc_industrial_projects') || '[]');
+  $('#projectList').innerHTML = projects.length ? projects.map(project => `<div class="project-item"><div><strong>${project.name || project.data?.projectName}</strong><br><small>${project.data?.scenario} · ${new Date(project.savedAt).toLocaleString('es-MX')}</small></div><div><button class="btn" data-load="${project.id}">Abrir</button></div></div>`).join('') : '<p class="help">No hay proyectos guardados.</p>';
+  $$('[data-load]').forEach(btn => btn.addEventListener('click', () => loadProject(btn.dataset.load)));
+}
+
+function loadProject(id){
+  const projects = JSON.parse(localStorage.getItem('frigocalc_industrial_projects') || '[]');
+  const project = projects.find(item => item.id === id);
+  if(!project) return;
+  applyData(project.data);
+  lastResult = project;
+  renderResult(project.result, project.infiltration || FrigoCalcEngine.infiltrationLoad(project.data));
+  switchPage('calculator');
+}
+
+function applyData(data){
+  Object.entries(data || {}).forEach(([key,value]) => { const el = $(`#${key}`); if(el && typeof value !== 'object') el.type === 'checkbox' ? el.checked = Boolean(value) : el.value = value; });
+  doors = Array.isArray(data.doors) && data.doors.length ? data.doors : doors;
+  renderDoors();
+  renderScenario();
+}
+
+function exportJson(){
+  if(!lastResult) calculate();
+  const blob = new Blob([JSON.stringify(lastResult,null,2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `frigo-industrial-${Date.now()}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function switchPage(page){
+  $$('.page').forEach(section => section.classList.toggle('hidden', section.id !== `${page}Page`));
+  $$('.nav button').forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+  if(page === 'projects') renderProjects();
+}
+
+function init(){
+  renderDoors(); renderScenario(); renderProjects();
+  $('#scenario').addEventListener('change', renderScenario);
+  $('#calculateButton').addEventListener('click', calculate);
+  $('#saveButton').addEventListener('click', () => saveProject(false));
+  $('#duplicateButton').addEventListener('click', () => saveProject(true));
+  $('#exportButton').addEventListener('click', exportJson);
+  $('#printButton').addEventListener('click', () => window.print());
+  $('#themeButton').addEventListener('click', () => document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  $('#addDoorButton').addEventListener('click', () => { doors.push({ name:`Puerta ${doors.length+1}`, width:1, height:2, uValue:1.8, openingsPerDay:10, minutesOpen:1, protectionFactor:1 }); renderDoors(); });
+  $$('.nav button').forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
+  $('#importButton').addEventListener('click', () => $('#importFile').click());
+  $('#importFile').addEventListener('change', async event => {
+    const file = event.target.files[0]; if(!file) return;
+    const parsed = JSON.parse(await file.text());
+    applyData(parsed.data || parsed);
+    lastResult = parsed.result ? parsed : null;
+    calculate();
+  });
+  const saved = localStorage.getItem('frigocalc_industrial_last_result');
+  if(saved){ try{ const parsed = JSON.parse(saved); applyData(parsed.data); lastResult = parsed; renderResult(parsed.result, parsed.infiltration || FrigoCalcEngine.infiltrationLoad(parsed.data)); } catch { /* ignore */ } }
+}
+init();
+  </script>
+</body>
+</html>
